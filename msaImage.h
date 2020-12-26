@@ -46,6 +46,16 @@ public:
 
 	void TransformImage(msaAffineTransform &trans, msaImage &output, int quality);
 
+	// going from 8 bit to 24 or 32 bit, use color as white point, and scale accordingly
+	// going from to 32 bit, copy alpha channel from color to whole image
+	// going from color to 8 bit, use color as relative brightness of each color component
+	void SimpleConvert(int newDepth, msaPixel &color, msaImage &output);
+
+	// TODO:  Add gray to color conversion with 256 element array of pixels, to do false color mapping
+	// TODO:  Add compositing function to add 8 bit alpha channel to 24 bit to make 32 bit
+	// TODO:  Add compositing function to add 3 or 4 8 bit images to make a 24 or 32 bit image
+	// TODO:  Add splitting function to break 24 and 32 bit images down into RGB/RGBA planes
+	// TODO:  Add splitting function to break 24 and 32 bit images down into HSV/HSVA planes
 protected:
 	// apply a transform to the given data type
 	unsigned char *transformFast32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);

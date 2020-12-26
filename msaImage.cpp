@@ -1211,3 +1211,135 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, int &widt
 	return output;
 }
 
+void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
+{
+	// if no change in depth, just copy the image
+	if(depth == newDepth)
+	{
+		output.SetCopyData(width, height, bytesPerLine, depth, data);
+		return;
+	}
+
+	// otherwise create an uninitialized image of the correct depth
+	output.CreateImage(width, height, newDepth);
+
+	if(newDepth == 8)
+	{
+		if(depth == 24)
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
+				unsigned char *inLine = &data[width * bytesPerLine];
+				for(int x = 0; x < width; ++x)
+				{
+					// multiply RGB values times color values to get relative brightness
+					int grey = *inLine++ * color.r;
+					grey += *inLine++ * color.g;
+				       	grey += *inLine++ * color.b;
+					grey /= 3;
+					if(grey < 0) grey = 0;
+					if(grey > 255) grey = 255;
+					*outLine++ = grey;
+				}
+			}
+		}
+		else // depth == 32
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
+				unsigned char *inLine = &data[width * bytesPerLine];
+				for(int x = 0; x < width; ++x)
+				{
+					// multiply RGB values times color values to get relative brightness
+					int grey = *inLine++ * color.r;
+					grey += *inLine++ * color.g;
+				       	grey += *inLine++ * color.b;
+					grey /= 3;
+					++inLine;	// skip alpha channel
+					if(grey < 0) grey = 0;
+					if(grey > 255) grey = 255;
+					*outLine++ = grey;
+				}
+			}
+		}
+	}
+	else if(newDepth == 24)
+	{
+		if(depth == 8)
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
+				unsigned char *inLine = &data[width * bytesPerLine];
+				for(int x = 0; x < width; ++x)
+				{
+					// assume color corresponds to white, scale between that and black
+					int grey = *inLine++;
+					*outLine++ = (unsigned char)(grey * color.r) / 255;
+					*outLine++ = (unsigned char)(grey * color.g) / 255;
+					*outLine++ = (unsigned char)(grey * color.b) / 255;
+				}
+			}
+		}
+		else // depth == 32
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
+				unsigned char *inLine = &data[width * bytesPerLine];
+				for(int x = 0; x < width; ++x)
+				{
+					// copy r, g, b, add in alpha
+					*outLine++ = *inLine++;
+					*outLine++ = *inLine++;
+					*outLine++ = *inLine++;
+					*outLine++ = color.a;
+				}
+			}
+		}
+	}
+	else if(newDepth == 32)
+	{
+		if(depth == 8)
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
+				unsigned char *inLine = &data[width * bytesPerLine];
+				for(int x = 0; x < width; ++x)
+				{
+					// assume color corresponds to white, scale between that and black
+					int grey = *inLine++;
+					*outLine++ = (unsigned char)(grey * color.r) / 255;
+					*outLine++ = (unsigned char)(grey * color.g) / 255;
+					*outLine++ = (unsigned char)(grey * color.b) / 255;
+					// copy in alpha
+					*outLine++ = color.a;
+				}
+			}
+
+		}
+		else // depth == 24
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
+				unsigned char *inLine = &data[width * bytesPerLine];
+				for(int x = 0; x < width; ++x)
+				{
+					// copy r, g, b, skip alpha
+					*outLine++ = *inLine++;
+					*outLine++ = *inLine++;
+					*outLine++ = *inLine++;
+					++inLine;
+				}
+			}
+
+		}
+	}
+	else
+		throw "Invalid image depth";
+}
+
