@@ -1237,7 +1237,7 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 					int grey = *inLine++ * color.r;
 					grey += *inLine++ * color.g;
 				       	grey += *inLine++ * color.b;
-					grey /= 3;
+					grey /= 3 * 255;
 					if(grey < 0) grey = 0;
 					if(grey > 255) grey = 255;
 					*outLine++ = grey;
@@ -1256,7 +1256,7 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 					int grey = *inLine++ * color.r;
 					grey += *inLine++ * color.g;
 				       	grey += *inLine++ * color.b;
-					grey /= 3;
+					grey /= 3 * 255;
 					++inLine;	// skip alpha channel
 					if(grey < 0) grey = 0;
 					if(grey > 255) grey = 255;
@@ -1468,5 +1468,57 @@ void msaImage::CompositeRGBA(msaImage &red, msaImage &green, msaImage &blue, msa
 }
 
 
+void msaImage::SplitRGB(msaImage &red, msaImage &green, msaImage &blue)
+{
+	if(depth != 24)
+		throw "SplitRGB must be used on a 24 bit image.";
+
+	// set up output images
+	red.CreateImage(width, height, 8);
+	green.CreateImage(width, height, 8);
+	blue.CreateImage(width, height, 8);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
+		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
+		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
+		unsigned char *rgbLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			*rLine++ = *rgbLine++;
+			*gLine++ = *rgbLine++;
+			*bLine++ = *rgbLine++;
+		}
+	}
+}
+
+void msaImage::SplitRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha)
+{
+	if(depth != 24)
+		throw "SplitRGBA must be used on a 32 bit image.";
+
+	// set up output images
+	red.CreateImage(width, height, 8);
+	green.CreateImage(width, height, 8);
+	blue.CreateImage(width, height, 8);
+	alpha.CreateImage(width, height, 8);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
+		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
+		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
+		unsigned char *aLine = &blue.Data()[y * blue.BytesPerLine()];
+		unsigned char *rgbaLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			*rLine++ = *rgbaLine++;
+			*gLine++ = *rgbaLine++;
+			*bLine++ = *rgbaLine++;
+			*aLine++ = *rgbaLine++;
+		}
+	}
+}
 
 
