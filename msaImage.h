@@ -61,14 +61,18 @@ public:
 	void AddAlphaChannel(msaImage &alpha, msaImage &output);
 
 	// compositing functions add 3 or 4 8 bit images to make a 24 or 32 bit image
-	void CompositeRGB(msaImage &red, msaImage &green, msaImage &blue);
-	void CompositeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha);
+	void ComposeRGB(msaImage &red, msaImage &green, msaImage &blue);
+	void ComposeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha);
 
-	// TODO:  Add splitting function to break 24 and 32 bit images down into RGB/RGBA planes
+	// splitting functions to break 24 and 32 bit images down into RGB/RGBA planes
 	void SplitRGB(msaImage &red, msaImage &green, msaImage &blue);
 	void SplitRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha);
 
-	// TODO:  Add splitting function to break 24 and 32 bit images down into HSV/HSVA planes
+	// compositing functions add 3 or 4 8 bit images to make a 24 or 32 bit image
+	void ComposeHSV(msaImage &hue, msaImage &sat, msaImage &vol);
+	void ComposeHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage &alpha);
+
+	// splitting functions to break 24 and 32 bit images down into HSV/HSVA planes
 	void SplitHSV(msaImage &hue, msaImage &saturation, msaImage &volume);
 	void SplitHSVA(msaImage &hue, msaImage &saturation, msaImage &volume, msaImage &alpha);
 

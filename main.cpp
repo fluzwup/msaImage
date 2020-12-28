@@ -5,6 +5,7 @@
 #include <memory.h>
 
 #include "msaImage.h"
+#include "ColorspaceConversion.h"
 
 #define DWORD int
 #define LONG int
@@ -246,28 +247,16 @@ int main(int argc, char **argv)
 	msaImage output;
 	image.TransformImage(affine, output, 50);
 
-	msaPixel p;
-	// perceived brightness is 60% green 30% red, 10% blue
-	p.r = 255;
-	p.g = 255;
-	p.b = 255;
-	msaImage gray;
-	image.SimpleConvert(8, p, gray);
+	msaImage hue, sat, vol;
 
-	SaveBitmap8("output8.bmp", gray.Width(), gray.Height(), gray.BytesPerLine(), gray.Data());
+	output.SplitHSV(hue, sat, vol);
+	
+	SaveBitmap8("hue.bmp", hue.Width(), hue.Height(), hue.BytesPerLine(), hue.Data());
+	SaveBitmap8("sat.bmp", sat.Width(), sat.Height(), sat.BytesPerLine(), sat.Data());
+	SaveBitmap8("vol.bmp", vol.Width(), vol.Height(), vol.BytesPerLine(), vol.Data());
 
-	msaImage white;
-	white.CreateImage(gray.Width(), gray.Height(), 8, p);
+	output.ComposeHSV(hue, sat, vol);
 
-	p.r = 0;
-	p.g = 0;
-	p.b = 0;
-	msaImage black;
-	black.CreateImage(gray.Width(), gray.Height(), 8, p);
-
-	output.CompositeRGB(gray, white, black);
-
-	// write out data
 	SaveBitmap24("output24.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
 
 	delete[] data;

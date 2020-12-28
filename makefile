@@ -11,8 +11,8 @@ LOCATIONS =
 
 LIBRARIES = 
 
-CXXFLAGS = -ggdb -fmessage-length=0 -ansi -Wall
-CFLAGS = -ggdb -fmessage-length=0 -ansi -Wall
+CXXFLAGS = -ggdb -Wall
+CFLAGS = -ggdb -Wall
 CXX = g++ 
 CC = gcc 
 

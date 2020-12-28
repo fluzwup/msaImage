@@ -1,4 +1,5 @@
 #include "msaImage.h"
+#include "ColorspaceConversion.h"
 
 
 msaImage::msaImage()
@@ -1405,7 +1406,7 @@ void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &output)
 	}
 }
 
-void msaImage::CompositeRGB(msaImage &red, msaImage &green, msaImage &blue)
+void msaImage::ComposeRGB(msaImage &red, msaImage &green, msaImage &blue)
 {
 	if(red.Depth() != 8 || green.Depth() != 8 || blue.Depth() != 8)
 		throw "All composite inputs must be an 8 bit images.";
@@ -1435,7 +1436,7 @@ void msaImage::CompositeRGB(msaImage &red, msaImage &green, msaImage &blue)
 	}
 }
 
-void msaImage::CompositeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha)
+void msaImage::ComposeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha)
 {
 	if(red.Depth() != 8 || green.Depth() != 8 || blue.Depth() != 8 || alpha.Depth() != 8)
 		throw "All composite inputs must be an 8 bit images.";
@@ -1481,7 +1482,7 @@ void msaImage::SplitRGB(msaImage &red, msaImage &green, msaImage &blue)
 	for(int y = 0; y < height; ++y)
 	{
 		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
-		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
+		unsigned char *gLine = &green.Data()[y * green.BytesPerLine()];
 		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
 		unsigned char *rgbLine = &data[y * bytesPerLine];
 		for(int x = 0; x < width; ++x)
@@ -1507,9 +1508,9 @@ void msaImage::SplitRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImag
 	for(int y = 0; y < height; ++y)
 	{
 		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
-		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
+		unsigned char *gLine = &green.Data()[y * green.BytesPerLine()];
 		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
-		unsigned char *aLine = &blue.Data()[y * blue.BytesPerLine()];
+		unsigned char *aLine = &alpha.Data()[y * alpha.BytesPerLine()];
 		unsigned char *rgbaLine = &data[y * bytesPerLine];
 		for(int x = 0; x < width; ++x)
 		{
@@ -1517,6 +1518,151 @@ void msaImage::SplitRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImag
 			*gLine++ = *rgbaLine++;
 			*bLine++ = *rgbaLine++;
 			*aLine++ = *rgbaLine++;
+		}
+	}
+}
+
+void msaImage::ComposeHSV(msaImage &hue, msaImage &sat, msaImage &vol)
+{
+	if(hue.Depth() != 8 || sat.Depth() != 8 || vol.Depth() != 8)
+		throw "All composite inputs must be an 8 bit images.";
+
+	int width = hue.Width();
+	int height = hue.Height();
+
+	if(sat.Width() != width || vol.Width() != width ||
+			sat.Height() != height || vol.Height() != height)
+		throw "Input image dimensions must match.";
+
+	// set up this image as output image
+	CreateImage(width, height, 24);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
+		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
+		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
+		unsigned char *rgbLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			// grab references to all the values we need for the conversion
+			unsigned char &r = *rgbLine++;
+			unsigned char &g = *rgbLine++;
+			unsigned char &b = *rgbLine++;
+			unsigned char &h = *hLine++;
+			unsigned char &s = *sLine++;
+			unsigned char &v = *vLine++;
+
+			// do colorpsace conversion
+			HSVtoRGB(h, s, v, r, g, b);
+		}
+	}
+}
+
+void msaImage::ComposeHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage &alpha)
+{
+	if(hue.Depth() != 8 || sat.Depth() != 8 || vol.Depth() != 8 || alpha.Depth() != 8)
+		throw "All composite inputs must be an 8 bit images.";
+
+	int width = hue.Width();
+	int height = hue.Height();
+
+	if(sat.Width() != width || vol.Width() != width || sat.Height() != height || 
+			vol.Height() != height || alpha.Height() != height)
+		throw "Input image dimensions must match.";
+
+	// set up this image as output image
+	CreateImage(width, height, 32);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
+		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
+		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
+		unsigned char *aLine = &alpha.Data()[y * alpha.BytesPerLine()];
+		unsigned char *rgbaLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			// grab references to all the values we need for the conversion
+			unsigned char &r = *rgbaLine++;
+			unsigned char &g = *rgbaLine++;
+			unsigned char &b = *rgbaLine++;
+			unsigned char &h = *hLine++;
+			unsigned char &s = *sLine++;
+			unsigned char &v = *vLine++;
+			// copy the alpha channel straight across
+			*rgbaLine++ = *aLine++;
+
+			// do colorpsace conversion
+			HSVtoRGB(h, s, v, r, g, b);
+		}
+	}
+}
+
+void msaImage::SplitHSV(msaImage &hue, msaImage &sat, msaImage &vol)
+{	
+	if(depth != 24)
+		throw "SplitHSV must be used on a 24 bit image.";
+
+	// set up output images
+	hue.CreateImage(width, height, 8);
+	sat.CreateImage(width, height, 8);
+	vol.CreateImage(width, height, 8);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
+		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
+		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
+		unsigned char *rgbLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			// grab references to all the values we need for the conversion
+			unsigned char &r = *rgbLine++;
+			unsigned char &g = *rgbLine++;
+			unsigned char &b = *rgbLine++;
+			unsigned char &h = *hLine++;
+			unsigned char &s = *sLine++;
+			unsigned char &v = *vLine++;
+
+			// do colorpsace conversion
+			RGBtoHSV(r, g, b, h, s, v);
+		}
+	}
+}
+
+void msaImage::SplitHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage &alpha)
+{
+	if(depth != 32)
+		throw "SplitHSVA must be used on a 32 bit image.";
+
+	// set up output images
+	hue.CreateImage(width, height, 8);
+	sat.CreateImage(width, height, 8);
+	vol.CreateImage(width, height, 8);
+	alpha.CreateImage(width, height, 8);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
+		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
+		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
+		unsigned char *aLine = &alpha.Data()[y * vol.BytesPerLine()];
+		unsigned char *rgbaLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			// grab references to all the values we need for the conversion
+			unsigned char &r = *rgbaLine++;
+			unsigned char &g = *rgbaLine++;
+			unsigned char &b = *rgbaLine++;
+			unsigned char &h = *hLine++;
+			unsigned char &s = *sLine++;
+			unsigned char &v = *vLine++;
+			// copy the alpha channel straight across
+			*aLine++ = *rgbaLine++;
+
+			// do colorpsace conversion on the rest
+			RGBtoHSV(r, g, b, h, s, v);
 		}
 	}
 }
