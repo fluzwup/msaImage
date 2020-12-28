@@ -9,6 +9,7 @@
 #define DWORD int
 #define LONG int
 #define WORD short
+#define BYTE unsigned char
 
 #pragma pack(1)
 typedef struct tagBITMAPINFOHEADER{
@@ -33,6 +34,13 @@ typedef struct tagBITMAPFILEHEADER {
         DWORD   bfOffBits;
 } BITMAPFILEHEADER;
 
+typedef struct tagRGBQUAD {
+	BYTE rgbBlue;
+	BYTE rgbGreen;
+	BYTE rgbRed;
+	BYTE rgbReserved;
+} RGBQUAD;
+
 // returns a number of microseconds
 unsigned long GetTickCount()
 {
@@ -41,7 +49,7 @@ unsigned long GetTickCount()
 	return 1000000 * tv.tv_sec + tv.tv_usec;
 }
 
-bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigned char **pdata)
+bool LoadBitmap24(const char *filename, int &width, int &height, int &bpl, unsigned char **pdata)
 {
 	BITMAPINFOHEADER bmih;
 	BITMAPFILEHEADER bmfh;
@@ -93,7 +101,7 @@ bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigne
 	return true;
 }
 
-bool SaveBitmap(const char *filename, int width, int height, int bpl, unsigned char *output)
+bool SaveBitmap24(const char *filename, int width, int height, int bpl, unsigned char *output)
 {
 	BITMAPINFOHEADER bmih;
 	BITMAPFILEHEADER bmfh;
@@ -116,7 +124,7 @@ bool SaveBitmap(const char *filename, int width, int height, int bpl, unsigned c
         bmih.biClrUsed = 0;
         bmih.biClrImportant = 0;
 
-	bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + bmih.biSizeImage;
+	bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + height * bpl;
 
 	// write out data
 	FILE *fp = fopen(filename, "wb");
@@ -156,12 +164,77 @@ bool SaveBitmap(const char *filename, int width, int height, int bpl, unsigned c
 	return true;
 }
 
+bool SaveBitmap8(const char *filename, int width, int height, int bpl, unsigned char *output)
+{
+	BITMAPINFOHEADER bmih;
+	BITMAPFILEHEADER bmfh;
+	RGBQUAD palette[256];
+
+	for(int i = 0; i < 256; ++i)
+	{
+		palette[i].rgbBlue = (unsigned char)i;
+		palette[i].rgbGreen = (unsigned char)i;
+		palette[i].rgbRed = (unsigned char)i;
+		palette[i].rgbReserved = 0;
+	}
+
+	bmfh.bfType = 0x4d42;
+	bmfh.bfOffBits = sizeof(bmfh) + sizeof(bmih) + sizeof(palette);
+	bmfh.bfReserved1 = 0;
+	bmfh.bfReserved2 = 0;
+
+	// set up changed file header values
+	bmih.biSize = sizeof(BITMAPINFOHEADER);
+	bmih.biWidth = width;
+	bmih.biHeight = height;
+	bmih.biPlanes = 1;
+	bmih.biBitCount = 8;
+	bmih.biCompression = 0;
+	bmih.biSizeImage = 0;
+        bmih.biXPelsPerMeter = 3937;
+        bmih.biYPelsPerMeter = 3937;
+        bmih.biClrUsed = 256;
+        bmih.biClrImportant = 0;
+
+	bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + sizeof(palette) + height * bpl;
+
+	// write out data
+	FILE *fp = fopen(filename, "wb");
+	if(fp == NULL)
+	{
+		printf("Cannot open %s for writing\n", filename);
+		return false;
+	}
+
+	fwrite(&bmfh, sizeof(bmfh), 1, fp);
+	fwrite(&bmih, sizeof(bmih), 1, fp);
+	fwrite(&palette, sizeof(palette), 1, fp);
+
+	// flip to upside down
+	for(int y = height - 1; y >= 0; --y)
+	{
+		unsigned char *line = output + bpl * y;
+
+		fwrite(line, bpl, 1, fp);
+
+		// pad line to 4 byte multiple if needed
+		if(bpl % 4 > 0)
+		{
+			unsigned char buffer[3] = {0};
+			fwrite(buffer, bpl % 3, 1, fp);
+		}
+	}
+	fclose(fp);
+
+	return true;
+}
+
 int main(int argc, char **argv)
 {
 	int width, height, bpl;
 	unsigned char *data = NULL;
 
-	if(!LoadBitmap("input24.bmp", width, height, bpl, &data))
+	if(!LoadBitmap24("input24.bmp", width, height, bpl, &data))
 		return -1;
 
 	msaAffineTransform affine;
@@ -173,8 +246,29 @@ int main(int argc, char **argv)
 	msaImage output;
 	image.TransformImage(affine, output, 50);
 
+	msaPixel p;
+	// perceived brightness is 60% green 30% red, 10% blue
+	p.r = 255;
+	p.g = 255;
+	p.b = 255;
+	msaImage gray;
+	image.SimpleConvert(8, p, gray);
+
+	SaveBitmap8("output8.bmp", gray.Width(), gray.Height(), gray.BytesPerLine(), gray.Data());
+
+	msaImage white;
+	white.CreateImage(gray.Width(), gray.Height(), 8, p);
+
+	p.r = 0;
+	p.g = 0;
+	p.b = 0;
+	msaImage black;
+	black.CreateImage(gray.Width(), gray.Height(), 8, p);
+
+	output.CompositeRGB(gray, white, black);
+
 	// write out data
-	SaveBitmap("output24.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+	SaveBitmap24("output24.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
 
 	delete[] data;
 

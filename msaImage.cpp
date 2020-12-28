@@ -86,7 +86,7 @@ void msaImage::SetCopyData(int w, int h, int bpl, int d, unsigned char *pd)
 
 	width = w;
 	height = h;
-	bytesPerLine = ((w * depth / 8) + 3) * 4 / 4; // round up to 4 byte multiple
+	bytesPerLine = ((w * depth / 8) + 3) / 4 * 4; // round up to 4 byte multiple
 	depth = d;
 	ownsData = true;
 
@@ -106,8 +106,8 @@ void msaImage::CreateImage(int w, int h, int d)
 
 	width = w;
 	height = h;
-	bytesPerLine = ((w * depth / 8) + 3) * 4 / 4; // round up to 4 byte multiple
 	depth = d;
+	bytesPerLine = ((w * depth / 8) + 3) / 4 * 4; // round up to 4 byte multiple
 	ownsData = true;
 
 	data = new unsigned char[height * bytesPerLine];
@@ -1229,8 +1229,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 		{
 			for(int y = 0; y < height; ++y)
 			{
-				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
-				unsigned char *inLine = &data[width * bytesPerLine];
+				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
+				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
 					// multiply RGB values times color values to get relative brightness
@@ -1248,8 +1248,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 		{
 			for(int y = 0; y < height; ++y)
 			{
-				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
-				unsigned char *inLine = &data[width * bytesPerLine];
+				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
+				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
 					// multiply RGB values times color values to get relative brightness
@@ -1271,8 +1271,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 		{
 			for(int y = 0; y < height; ++y)
 			{
-				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
-				unsigned char *inLine = &data[width * bytesPerLine];
+				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
+				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
 					// assume color corresponds to white, scale between that and black
@@ -1287,8 +1287,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 		{
 			for(int y = 0; y < height; ++y)
 			{
-				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
-				unsigned char *inLine = &data[width * bytesPerLine];
+				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
+				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
 					// copy r, g, b, add in alpha
@@ -1306,8 +1306,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 		{
 			for(int y = 0; y < height; ++y)
 			{
-				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
-				unsigned char *inLine = &data[width * bytesPerLine];
+				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
+				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
 					// assume color corresponds to white, scale between that and black
@@ -1325,8 +1325,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 		{
 			for(int y = 0; y < height; ++y)
 			{
-				unsigned char *outLine = &(output.Data())[width * output.BytesPerLine()];
-				unsigned char *inLine = &data[width * bytesPerLine];
+				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
+				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
 					// copy r, g, b, skip alpha
@@ -1342,4 +1342,131 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 	else
 		throw "Invalid image depth";
 }
+
+void msaImage::ColorMap(msaPixel map[256], msaImage &output)
+{
+	if(depth != 8)
+		throw "Colormap can only be applied to an 8 bit image.";
+
+	output.CreateImage(width, height, 24);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *line = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			msaPixel &pixel = map[data[y * bytesPerLine + x]];
+			*line++ = pixel.r;
+			*line++ = pixel.g;
+			*line++ = pixel.b;
+		}
+	}
+}
+
+void msaImage::RemapBrightness(unsigned char map[256], msaImage &output)
+{
+	if(depth != 8)
+		throw "Colormap can only be applied to an 8 bit image.";
+
+	output.CreateImage(width, height, 24);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *line = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			*line++ = map[data[y * bytesPerLine + x]];
+		}
+	}
+}
+
+void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &output)
+{
+	if(depth != 24)
+		throw "Alpha channel can only be applied to a 24 bit image.";
+
+	if(alpha.Depth() != 8)
+		throw "Alpha channel must be an 8 bit image.";
+
+	output.CreateImage(width, height, 32);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *inLine = &data[y * bytesPerLine];
+		unsigned char *outLine = &output.Data()[y * output.BytesPerLine()];
+		unsigned char *alphaLine = &alpha.Data()[y * alpha.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			*outLine++ = *inLine++;     // r
+			*outLine++ = *inLine++;     // g
+			*outLine++ = *inLine++;     // b
+			*outLine++ = *alphaLine++;  // alpha
+		}
+	}
+}
+
+void msaImage::CompositeRGB(msaImage &red, msaImage &green, msaImage &blue)
+{
+	if(red.Depth() != 8 || green.Depth() != 8 || blue.Depth() != 8)
+		throw "All composite inputs must be an 8 bit images.";
+
+	int width = red.Width();
+	int height = red.Height();
+
+	if(green.Width() != width || blue.Width() != width ||
+			green.Height() != height || blue.Height() != height)
+		throw "Input image dimensions must match.";
+
+	// set up this image as output image
+	CreateImage(width, height, 24);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
+		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
+		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
+		unsigned char *outLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			*outLine++ = *rLine++;
+			*outLine++ = *gLine++;
+			*outLine++ = *bLine++;
+		}
+	}
+}
+
+void msaImage::CompositeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha)
+{
+	if(red.Depth() != 8 || green.Depth() != 8 || blue.Depth() != 8 || alpha.Depth() != 8)
+		throw "All composite inputs must be an 8 bit images.";
+
+	int width = red.Width();
+	int height = red.Height();
+
+	if(green.Width() != width || blue.Width() != width || green.Height() != height || blue.Height() != height 
+			|| alpha.Width() != width || alpha.Height() != height)
+		throw "Input image dimensions must match.";
+
+	// set up this image as output image
+	CreateImage(width, height, 32);
+	
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
+		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
+		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
+		unsigned char *aLine = &alpha.Data()[y * alpha.BytesPerLine()];
+		unsigned char *outLine = &data[y * bytesPerLine];
+		for(int x = 0; x < width; ++x)
+		{
+			*outLine++ = *rLine++;
+			*outLine++ = *gLine++;
+			*outLine++ = *bLine++;
+			*outLine++ = *aLine++;
+		}
+	}
+}
+
+
+
 

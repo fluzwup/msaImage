@@ -51,11 +51,35 @@ public:
 	// going from color to 8 bit, use color as relative brightness of each color component
 	void SimpleConvert(int newDepth, msaPixel &color, msaImage &output);
 
-	// TODO:  Add gray to color conversion with 256 element array of pixels, to do false color mapping
-	// TODO:  Add compositing function to add 8 bit alpha channel to 24 bit to make 32 bit
-	// TODO:  Add compositing function to add 3 or 4 8 bit images to make a 24 or 32 bit image
+	// gray to 24 bit color conversion with 256 element array of pixels, to do false color mapping
+	void ColorMap(msaPixel map[256], msaImage &output);
+
+	// remap brightness of a gray image
+	void RemapBrightness(unsigned char map[256], msaImage &output);
+
+	// compositing function to add 8 bit alpha channel to 24 bit to make 32 bit
+	void AddAlphaChannel(msaImage &alpha, msaImage &output);
+
+	// compositing functions add 3 or 4 8 bit images to make a 24 or 32 bit image
+	void CompositeRGB(msaImage &red, msaImage &green, msaImage &blue);
+	void CompositeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha);
+
 	// TODO:  Add splitting function to break 24 and 32 bit images down into RGB/RGBA planes
+	void SplitRGB(msaImage &red, msaImage &green, msaImage &blue);
+	void SplitRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImage &alpha);
+
 	// TODO:  Add splitting function to break 24 and 32 bit images down into HSV/HSVA planes
+	void SplitHSV(msaImage &hue, msaImage &saturation, msaImage &volume);
+	void SplitHSVA(msaImage &hue, msaImage &saturation, msaImage &volume, msaImage &alpha);
+
+	// TODO:  Add image combination functions:  min, max, sum, difference, multiply, divide
+	void MinImages(msaImage &input, msaImage &output);
+	void MaxImages(msaImage &input, msaImage &output);
+	void SumImages(msaImage &input, msaImage &output);
+	void DiffImages(msaImage &input, msaImage &output);
+	void MultiplyImages(msaImage &input, msaImage &output);
+	void DivideImages(msaImage &input, msaImage &output);
+
 protected:
 	// apply a transform to the given data type
 	unsigned char *transformFast32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);

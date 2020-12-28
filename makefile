@@ -1,7 +1,7 @@
 
 BINARY = imgtest
 
-CXXSOURCES = main.cpp msaImage.cpp
+CXXSOURCES = main.cpp msaImage.cpp ColorspaceConversion.cpp
 
 OBJECTS = ${CXXSOURCES:.cpp=.o} ${CSOURCES:.c=.o} 
 
