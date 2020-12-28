@@ -1667,4 +1667,132 @@ void msaImage::SplitHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage &
 	}
 }
 
+void msaImage::MinImages(msaImage &input, msaImage &output)
+{
+	// make sure input image matches dimensions
+	if(depth != input.Depth() || width != input.Width() || height != input.Height())
+		throw "Input images must match in size and color depth.";
+
+	output.CreateImage(width, height, depth);
+
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *in1 = &data[y * bytesPerLine];
+		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
+		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			unsigned char c1 = *in1++;
+			unsigned char c2 = *in2++;
+			*out++ = c1 > c2 ? c2 : c1;
+		}
+	}
+}
+
+void msaImage::MaxImages(msaImage &input, msaImage &output)
+{
+	// make sure input image matches dimensions
+	if(depth != input.Depth() || width != input.Width() || height != input.Height())
+		throw "Input images must match in size and color depth.";
+
+	output.CreateImage(width, height, depth);
+
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *in1 = &data[y * bytesPerLine];
+		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
+		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			unsigned char c1 = *in1++;
+			unsigned char c2 = *in2++;
+			*out++ = c1 > c2 ? c1 : c2;
+		}
+	}
+}
+
+void msaImage::SumImages(msaImage &input, msaImage &output)
+{
+	// make sure input image matches dimensions
+	if(depth != input.Depth() || width != input.Width() || height != input.Height())
+		throw "Input images must match in size and color depth.";
+
+	output.CreateImage(width, height, depth);
+
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *in1 = &data[y * bytesPerLine];
+		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
+		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			int sum = *in1++ + *in2++;
+			*out++ = (unsigned char)sum / 2;
+		}
+	}
+}
+
+void msaImage::DiffImages(msaImage &input, msaImage &output)
+{
+	// make sure input image matches dimensions
+	if(depth != input.Depth() || width != input.Width() || height != input.Height())
+		throw "Input images must match in size and color depth.";
+
+	output.CreateImage(width, height, depth);
+
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *in1 = &data[y * bytesPerLine];
+		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
+		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			int diff = *in1++ - *in2++;
+			*out++ = (unsigned char)(127 + diff / 2);
+		}
+	}
+}
+
+void msaImage::MultiplyImages(msaImage &input, msaImage &output)
+{
+	// make sure input image matches dimensions
+	if(depth != input.Depth() || width != input.Width() || height != input.Height())
+		throw "Input images must match in size and color depth.";
+
+	output.CreateImage(width, height, depth);
+
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *in1 = &data[y * bytesPerLine];
+		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
+		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			int m = *in1++ * *in2++;
+			*out++ = (unsigned char)(m / 256);
+		}
+	}
+}
+
+void msaImage::DivideImages(msaImage &input, msaImage &output)
+{
+	// make sure input image matches dimensions
+	if(depth != input.Depth() || width != input.Width() || height != input.Height())
+		throw "Input images must match in size and color depth.";
+
+	output.CreateImage(width, height, depth);
+
+	for(int y = 0; y < height; ++y)
+	{
+		unsigned char *in1 = &data[y * bytesPerLine];
+		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
+		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
+		for(int x = 0; x < width; ++x)
+		{
+			int d = *in1++ * 256 / *in2++;
+			*out++ = (unsigned char)d;
+		}
+	}
+}
+
 
