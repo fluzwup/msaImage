@@ -1235,13 +1235,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 				for(int x = 0; x < width; ++x)
 				{
 					// multiply RGB values times color values to get relative brightness
-					int grey = *inLine++ * color.r;
-					grey += *inLine++ * color.g;
-				       	grey += *inLine++ * color.b;
-					grey /= 3 * 255;
-					if(grey < 0) grey = 0;
-					if(grey > 255) grey = 255;
-					*outLine++ = grey;
+					*outLine++ = RGBtoGray(inLine[0], inLine[1], inLine[2]);
+					inLine += 3;
 				}
 			}
 		}
@@ -1254,14 +1249,8 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 				for(int x = 0; x < width; ++x)
 				{
 					// multiply RGB values times color values to get relative brightness
-					int grey = *inLine++ * color.r;
-					grey += *inLine++ * color.g;
-				       	grey += *inLine++ * color.b;
-					grey /= 3 * 255;
-					++inLine;	// skip alpha channel
-					if(grey < 0) grey = 0;
-					if(grey > 255) grey = 255;
-					*outLine++ = grey;
+					*outLine++ = RGBtoGray(inLine[0], inLine[1], inLine[2]);
+					inLine += 4;	// skip alpha channel
 				}
 			}
 		}
@@ -1292,11 +1281,11 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
-					// copy r, g, b, add in alpha
+					// copy r, g, b, drop alpha
 					*outLine++ = *inLine++;
 					*outLine++ = *inLine++;
 					*outLine++ = *inLine++;
-					*outLine++ = color.a;
+					inLine++;
 				}
 			}
 		}
@@ -1330,11 +1319,11 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 				unsigned char *inLine = &data[y * bytesPerLine];
 				for(int x = 0; x < width; ++x)
 				{
-					// copy r, g, b, skip alpha
+					// copy r, g, b, add in alpha
 					*outLine++ = *inLine++;
 					*outLine++ = *inLine++;
 					*outLine++ = *inLine++;
-					++inLine;
+					*outLine++ = color.a;
 				}
 			}
 
@@ -1347,7 +1336,7 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 void msaImage::ColorMap(msaPixel map[256], msaImage &output)
 {
 	if(depth != 8)
-		throw "Colormap can only be applied to an 8 bit image.";
+		throw "ColorMap can only be applied to an 8 bit image.";
 
 	output.CreateImage(width, height, 24);
 	
@@ -1367,7 +1356,7 @@ void msaImage::ColorMap(msaPixel map[256], msaImage &output)
 void msaImage::RemapBrightness(unsigned char map[256], msaImage &output)
 {
 	if(depth != 8)
-		throw "Colormap can only be applied to an 8 bit image.";
+		throw "RemapBrightness can only be applied to an 8 bit image.";
 
 	output.CreateImage(width, height, 24);
 	

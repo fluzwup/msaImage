@@ -76,13 +76,20 @@ public:
 	void SplitHSV(msaImage &hue, msaImage &saturation, msaImage &volume);
 	void SplitHSVA(msaImage &hue, msaImage &saturation, msaImage &volume, msaImage &alpha);
 
-	// TODO:  Add image combination functions:  min, max, sum, difference, multiply, divide
+	// image combination functions
 	void MinImages(msaImage &input, msaImage &output);
 	void MaxImages(msaImage &input, msaImage &output);
 	void SumImages(msaImage &input, msaImage &output);
 	void DiffImages(msaImage &input, msaImage &output);
 	void MultiplyImages(msaImage &input, msaImage &output);
 	void DivideImages(msaImage &input, msaImage &output);
+
+	// simple overlay function; if overlay image is 32 bit, then alpha channel will be used
+	void OverlayImage(msaImage &overlay, int x, int y, int w, int h, msaImage &output);
+
+	// mask may be gray for alpha channel, or RGB for stained glass transparency
+	// mask and overlay must be same size
+	void OverlayImage(msaImage &overlay, msaImage &mask, int x, int y, int w, int h, msaImage &output);
 
 protected:
 	// apply a transform to the given data type

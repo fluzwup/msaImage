@@ -1,7 +1,7 @@
 
 BINARY = imgtest
 
-CXXSOURCES = main.cpp msaImage.cpp ColorspaceConversion.cpp
+CXXSOURCES = main.cpp msaImage.cpp ColorspaceConversion.cpp msaFilters.cpp
 
 OBJECTS = ${CXXSOURCES:.cpp=.o} ${CSOURCES:.c=.o} 
 
@@ -13,7 +13,7 @@ LIBRARIES =
 
 CXXFLAGS = -ggdb -Wall
 CFLAGS = -ggdb -Wall
-CXX = g++ 
+CXX = g++ --std=c++11
 CC = gcc 
 
 .SUFFIXES:      .cpp .o
