@@ -6,6 +6,7 @@
 
 #include "msaImage.h"
 #include "ColorspaceConversion.h"
+#include "msaFilters.h"
 
 #define DWORD int
 #define LONG int
@@ -138,6 +139,10 @@ bool SaveBitmap24(const char *filename, int width, int height, int bpl, unsigned
 	fwrite(&bmfh, sizeof(bmfh), 1, fp);
 	fwrite(&bmih, sizeof(bmih), 1, fp);
 
+	// set up a line for BGR conversion
+	int outbpl = (bmih.biBitCount * width / 8 + 3) / 4 * 4;
+	unsigned char outline[outbpl];
+
 	// flip to upside down
 	for(int y = height - 1; y >= 0; --y)
 	{
@@ -146,19 +151,74 @@ bool SaveBitmap24(const char *filename, int width, int height, int bpl, unsigned
 		// convert to RGB to BGR
 		for(int x = 0; x < width  * 3; x += 3)
 		{
-			unsigned char temp = line[x];
-			line[x] = line[x + 2];
-			line[x + 2] = temp;
+			outline[x + 2] =  line[x];
+			outline[x + 1] =  line[x + 1];
+			outline[x] =  line[x + 2];
 		}
 
-		fwrite(line, bpl, 1, fp);
+		fwrite(outline, outbpl, 1, fp);
+	}
+	fclose(fp);
 
-		// pad line to 4 byte multiple if needed
-		if(bpl % 4 > 0)
+	return true;
+}
+
+bool SaveBitmap32(const char *filename, int width, int height, int bpl, unsigned char *output)
+{
+	BITMAPINFOHEADER bmih;
+	BITMAPFILEHEADER bmfh;
+
+	bmfh.bfType = 0x4d42;
+	bmfh.bfOffBits = sizeof(bmfh) + sizeof(bmih);
+	bmfh.bfReserved1 = 0;
+	bmfh.bfReserved2 = 0;
+
+	// set up changed file header values
+	bmih.biSize = sizeof(BITMAPINFOHEADER);
+	bmih.biWidth = width;
+	bmih.biHeight = height;
+	bmih.biPlanes = 1;
+	bmih.biBitCount = 32;
+	bmih.biCompression = 0;
+	bmih.biSizeImage = 0;
+        bmih.biXPelsPerMeter = 3937;
+        bmih.biYPelsPerMeter = 3937;
+        bmih.biClrUsed = 0;
+        bmih.biClrImportant = 0;
+
+	bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + height * bpl;
+
+	// write out data
+	FILE *fp = fopen(filename, "wb");
+	if(fp == NULL)
+	{
+		printf("Cannot open %s for writing\n", filename);
+		return false;
+	}
+
+	fwrite(&bmfh, sizeof(bmfh), 1, fp);
+	fwrite(&bmih, sizeof(bmih), 1, fp);
+
+	// set up a line for BGR conversion
+	int outbpl = bmih.biBitCount * width / 8;
+	unsigned char outline[outbpl];
+
+	// flip to upside down
+	for(int y = height - 1; y >= 0; --y)
+	{
+		unsigned char *line = output + bpl * y;
+
+		// convert to RGB to BGR
+		for(int x = 0; x < width  * 4; x += 4)
 		{
-			unsigned char buffer[3] = {0};
-			fwrite(buffer, bpl % 3, 1, fp);
+			outline[x + 2] =  line[x];
+			outline[x + 1] =  line[x + 1];
+			outline[x] =  line[x + 2];
+			// alpha stays in the same spot
+			outline[x + 3] =  line[x + 3];
 		}
+
+		fwrite(outline, outbpl, 1, fp);
 	}
 	fclose(fp);
 
@@ -238,26 +298,34 @@ int main(int argc, char **argv)
 	if(!LoadBitmap24("input24.bmp", width, height, bpl, &data))
 		return -1;
 
-	msaAffineTransform affine;
-	affine.SetTransform((double)1, DegreesToRadians(45.0), width, height);
+	msaImage input, image, output;
+	input.UseExternalData(width, height, bpl, 24, data);
 
-	msaImage image;
-	image.UseExternalData(width, height, bpl, 24, data);
-
-	msaImage output;
-	image.TransformImage(affine, output, 50);
-
-	msaImage hue, sat, vol;
-
-	output.SplitHSV(hue, sat, vol);
+	msaPixel p;
+	p.r = 255;
+	p.g = 255;
+	p.b = 255;
+	p.a = 255;
 	
-	SaveBitmap8("hue.bmp", hue.Width(), hue.Height(), hue.BytesPerLine(), hue.Data());
-	SaveBitmap8("sat.bmp", sat.Width(), sat.Height(), sat.BytesPerLine(), sat.Data());
-	SaveBitmap8("vol.bmp", vol.Width(), vol.Height(), vol.BytesPerLine(), vol.Data());
+	input.SimpleConvert(32, p, image);
 
-	output.ComposeHSV(hue, sat, vol);
+	msaFilters filter;
 
-	SaveBitmap24("output24.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+	filter.SetType(msaFilters::FilterType::Median, 5, 5);
+	filter.FilterImage(image, output);
+	SaveBitmap32("median32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+
+	filter.SetType(msaFilters::FilterType::Dilate, 5, 5);
+	filter.FilterImage(image, output);
+	SaveBitmap32("dilate32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+
+	filter.SetType(msaFilters::FilterType::Erode, 5, 5);
+	filter.FilterImage(image, output);
+	SaveBitmap32("erode32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+
+	filter.SetType(msaFilters::FilterType::Gaussian, 5, 5);
+	filter.FilterImage(image, output);
+	SaveBitmap32("gaussian32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
 
 	delete[] data;
 

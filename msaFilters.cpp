@@ -1313,7 +1313,7 @@ void msaFilters::MedianFilter32(unsigned char *input, unsigned char *output, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
-					alpha = *pin++;
+					++pin;
 
 					int gray = RGBtoGray(r, g, b);
 					++count[gray];
@@ -1376,6 +1376,7 @@ void msaFilters::MedianFilter32(unsigned char *input, unsigned char *output, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 
 					int gray = RGBtoGray(r, g, b);
 					++count[gray];
@@ -1437,6 +1438,7 @@ void msaFilters::MedianFilter32(unsigned char *input, unsigned char *output, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 
 					int gray = RGBtoGray(r, g, b);
 					++count[gray];
@@ -1501,6 +1503,7 @@ void msaFilters::MedianFilter32(unsigned char *input, unsigned char *output, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 
 					int gray = RGBtoGray(r, g, b);
 					++count[gray];
@@ -1565,6 +1568,7 @@ void msaFilters::MedianFilter32(unsigned char *input, unsigned char *output, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 
 					int gray = RGBtoGray(r, g, b);
 					++count[gray];
@@ -1634,7 +1638,7 @@ void msaFilters::Dilate32(unsigned char *input, unsigned char *output, int w, in
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
-					alpha = *pin++;
+					++pin;
 					if(r + b + g > max)
 					{
 						rmax = r;
@@ -1680,7 +1684,7 @@ void msaFilters::Dilate32(unsigned char *input, unsigned char *output, int w, in
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
-					alpha = *pin++;
+					++pin;
 					if(r + b + g > max)
 					{
 						rmax = r;
@@ -1724,7 +1728,7 @@ void msaFilters::Dilate32(unsigned char *input, unsigned char *output, int w, in
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
-					alpha = *pin++;
+					++pin;
 					if(r + b + g > max)
 					{
 						rmax = r;
@@ -1810,6 +1814,7 @@ void msaFilters::Dilate32(unsigned char *input, unsigned char *output, int w, in
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 					if(r + b + g > max)
 					{
 						rmax = r;
@@ -1863,6 +1868,7 @@ void msaFilters::Erode32(unsigned char *input, unsigned char *output, int w, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 					if(r + b + g < min)
 					{
 						rmin = r;
@@ -1881,7 +1887,6 @@ void msaFilters::Erode32(unsigned char *input, unsigned char *output, int w, int
 		}
 	}
 
-	// now deal with the edges
 	// now deal with the edges
 
 	// top edge
@@ -1909,6 +1914,7 @@ void msaFilters::Erode32(unsigned char *input, unsigned char *output, int w, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 					if(r + b + g < min)
 					{
 						rmin = r;
@@ -1952,6 +1958,7 @@ void msaFilters::Erode32(unsigned char *input, unsigned char *output, int w, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 					if(r + b + g < min)
 					{
 						rmin = r;
@@ -1994,6 +2001,7 @@ void msaFilters::Erode32(unsigned char *input, unsigned char *output, int w, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 					if(r + b + g < min)
 					{
 						rmin = r;
@@ -2036,6 +2044,7 @@ void msaFilters::Erode32(unsigned char *input, unsigned char *output, int w, int
 					unsigned char r = *pin++;
 					unsigned char g = *pin++;
 					unsigned char b = *pin++;
+					++pin;
 					if(r + b + g < min)
 					{
 						rmin = r;
@@ -2090,6 +2099,7 @@ void msaFilters::Filter32(unsigned char *input, unsigned char *output, int w, in
 					rsum += *pin++ * m_values[filtVal];
 					gsum += *pin++ * m_values[filtVal];
 					bsum += *pin++ * m_values[filtVal++];
+					++pin;
 				}
 			}
 
@@ -2138,6 +2148,7 @@ void msaFilters::Filter32(unsigned char *input, unsigned char *output, int w, in
 					rsum += *pin++ * m_values[filtVal];
 					gsum += *pin++ * m_values[filtVal];
 					bsum += *pin++ * m_values[filtVal++];
+					++pin;
 				}
 			}
 
@@ -2184,6 +2195,7 @@ void msaFilters::Filter32(unsigned char *input, unsigned char *output, int w, in
 					rsum += *pin++ * m_values[filtVal];
 					gsum += *pin++ * m_values[filtVal];
 					bsum += *pin++ * m_values[filtVal++];
+					++pin;
 				}
 			}
 
@@ -2231,6 +2243,7 @@ void msaFilters::Filter32(unsigned char *input, unsigned char *output, int w, in
 					rsum += *pin++ * m_values[filtVal];
 					gsum += *pin++ * m_values[filtVal];
 					bsum += *pin++ * m_values[filtVal++];
+					++pin;
 				}
 			}
 
@@ -2278,6 +2291,7 @@ void msaFilters::Filter32(unsigned char *input, unsigned char *output, int w, in
 					rsum += *pin++ * m_values[filtVal];
 					gsum += *pin++ * m_values[filtVal];
 					bsum += *pin++ * m_values[filtVal++];
+					++pin;
 				}
 			}
 

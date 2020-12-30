@@ -1,3 +1,5 @@
+#ifndef _ColorspaceConversion_included
+#define _ColorspaceConversion_included
 
 void RGBtoHSV(unsigned char R, unsigned char G, unsigned char B, unsigned char &H, unsigned char &S, unsigned char &V);
 void HSVtoRGB(unsigned char H, unsigned char S, unsigned char V, unsigned char &R, unsigned char &G, unsigned char &B);
@@ -16,4 +18,5 @@ inline unsigned char RGBtoGray(unsigned char r, unsigned char g, unsigned char b
 {
 	return RedToGray[r] + GreenToGray[g] + BlueToGray[b];
 }
+#endif
 

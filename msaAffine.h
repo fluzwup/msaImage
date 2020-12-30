@@ -1,3 +1,5 @@
+#ifndef _msaAffine_included
+#define _msaAffine_included
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -160,4 +162,5 @@ public:
 	};
 };
 
+#endif
 

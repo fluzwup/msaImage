@@ -1,3 +1,5 @@
+#ifndef _msaFilters_included
+#define _msaFilters_included
 #include <vector>
 #include "msaImage.h"
 
@@ -69,3 +71,5 @@ protected:
 	void MedianFilter24(unsigned char *input, unsigned char *output, int w, int h, int bpl);
 	void MedianFilter32(unsigned char *input, unsigned char *output, int w, int h, int bpl);
 };
+#endif
+

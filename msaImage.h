@@ -1,3 +1,5 @@
+#ifndef _msaImage_included
+#define _msaImage_included
 #include "msaAffine.h"
 
 class msaPixel
@@ -105,4 +107,5 @@ protected:
 	unsigned char *transformBetter8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
 	unsigned char *transformBest8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
 };
+#endif
 
