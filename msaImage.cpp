@@ -61,8 +61,8 @@ void msaImage::UseExternalData(int w, int h, int bpl, int d, unsigned char *pd)
 
 	width = w;
 	height = h;
-	bytesPerLine = bpl;
 	depth = d;
+	bytesPerLine = bpl;
 	data = pd;
 	ownsData = false;
 }
@@ -74,8 +74,8 @@ void msaImage::TakeExternalData(int w, int h, int bpl, int d, unsigned char *pd)
 
 	width = w;
 	height = h;
-	bytesPerLine = bpl;
 	depth = d;
+	bytesPerLine = bpl;
 	data = pd;
 	ownsData = true;
 }
@@ -87,8 +87,8 @@ void msaImage::SetCopyData(int w, int h, int bpl, int d, unsigned char *pd)
 
 	width = w;
 	height = h;
-	bytesPerLine = ((w * depth / 8) + 3) / 4 * 4; // round up to 4 byte multiple
 	depth = d;
+	bytesPerLine = ((w * depth / 8) + 3) / 4 * 4; // round up to 4 byte multiple
 	ownsData = true;
 
 	data = new unsigned char[height * bytesPerLine];
@@ -1784,4 +1784,172 @@ void msaImage::DivideImages(msaImage &input, msaImage &output)
 	}
 }
 
+void msaImage::OverlayImage(msaImage &overlay, int destx, int desty, int w, int h)
+{
+	if(depth != overlay.Depth())
+		throw "Overlay image must match depth of base image";
+
+	// for 8 and 24 bit, just copy the data from the overlay image into the destination rectangle
+	if(depth == 8)
+	{
+		for(int y = 0; y < h; ++y)
+			memcpy(&data[(desty + y) * bytesPerLine + destx], &overlay.Data()[y * overlay.BytesPerLine()], w); 
+	}
+	else if(depth == 24)
+	{
+		for(int y = 0; y < h; ++y)
+			memcpy(&data[(desty + y) * bytesPerLine + destx * 3], &overlay.Data()[y * overlay.BytesPerLine()], w * 3); 
+	}
+	else if(depth == 32)
+	{
+		for(int y = 0; y < h; ++y)
+		{
+			for(int x = 0; x < w; ++x)
+			{
+				// grab data from overlay and base
+				unsigned char &r1 = data[(desty + y) * bytesPerLine + (destx + x) * 4];
+				unsigned char &g1 = data[(desty + y) * bytesPerLine + (destx + x) * 4 + 1];
+				unsigned char &b1 = data[(desty + y) * bytesPerLine + (destx + x) * 4 + 2];
+
+				int r2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4];
+				int g2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 1];
+				int b2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 2];
+				int alpha = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 3];
+
+				// combine colors in ratio given by alpha channel
+				r2 = ((int)r1 * (255 - alpha) + r2 * alpha) / 255;
+				g2 = ((int)g1 * (255 - alpha) + g2 * alpha) / 255;
+				b2 = ((int)b1 * (255 - alpha) + b2 * alpha) / 255;
+
+				// put combined data into base
+				r1 = (unsigned char)r2;
+				g1 = (unsigned char)g2;
+				b1 = (unsigned char)b2;
+			}
+		}
+	}
+}
+
+void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int desty, int w, int h)
+{
+	if(depth != overlay.Depth())
+		throw "Overlay image must match depth of base image";
+
+	if(depth == 8)
+	{
+		if(mask.Depth() != 8)
+			throw "Mask must be 8 bit depth";
+
+		for(int y = 0; y < h; ++y)
+		{
+			for(int x = 0; x < w; ++x)
+			{
+				// grab data from overlay, base, and mask
+				unsigned char &g1 = data[(desty + y) * bytesPerLine + (destx + x)];
+				int g2 = overlay.Data()[y * overlay.BytesPerLine() + x];
+				int alpha = overlay.Data()[y * overlay.BytesPerLine() + x];
+
+				// combine colors in ratio given by alpha channel
+				g2 = ((int)g1 * (255 - alpha) + g2 * alpha) / 255;
+
+				// put combined data into base
+				g1 = (unsigned char)g2;
+			}
+		}
+	}
+	else if(depth == 24)
+	{
+		for(int y = 0; y < h; ++y)
+		{
+			for(int x = 0; x < w; ++x)
+			{
+				// grab data from overlay and base
+				unsigned char &r1 = data[(desty + y) * bytesPerLine + (destx + x) * 3];
+				unsigned char &g1 = data[(desty + y) * bytesPerLine + (destx + x) * 3 + 1];
+				unsigned char &b1 = data[(desty + y) * bytesPerLine + (destx + x) * 3 + 2];
+
+				int r2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3];
+				int g2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 1];
+				int b2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 2];
+
+				int alpha1, alpha2, alpha3;
+			       
+				if(mask.Depth() == 32)
+				{
+					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 4];
+					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 1];
+					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 2];
+				}
+				else if(mask.Depth() == 24)
+				{
+					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 3];
+					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 1];
+					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 2];
+				}
+				else if(mask.Depth() == 8)
+				{
+					alpha1 = alpha2 = alpha3 = 
+						overlay.Data()[y * overlay.BytesPerLine() + x];
+				}
+
+				// combine colors in ratio given by alpha channel
+				r2 = ((int)r1 * (255 - alpha1) + r2 * alpha1) / 255;
+				g2 = ((int)g1 * (255 - alpha2) + g2 * alpha2) / 255;
+				b2 = ((int)b1 * (255 - alpha3) + b2 * alpha3) / 255;
+
+				// put combined data into base
+				r1 = (unsigned char)r2;
+				g1 = (unsigned char)g2;
+				b1 = (unsigned char)b2;
+			}
+		}
+	}
+	else if(depth == 32)
+	{
+		for(int y = 0; y < h; ++y)
+		{
+			for(int x = 0; x < w; ++x)
+			{
+				// grab data from overlay and base
+				unsigned char &r1 = data[(desty + y) * bytesPerLine + (destx + x) * 4];
+				unsigned char &g1 = data[(desty + y) * bytesPerLine + (destx + x) * 4 + 1];
+				unsigned char &b1 = data[(desty + y) * bytesPerLine + (destx + x) * 4 + 2];
+
+				int r2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4];
+				int g2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 1];
+				int b2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 2];
+
+				int alpha1, alpha2, alpha3;
+			       
+				if(mask.Depth() == 32)
+				{
+					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 4];
+					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 1];
+					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 2];
+				}
+				else if(mask.Depth() == 24)
+				{
+					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 3];
+					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 1];
+					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 2];
+				}
+				else if(mask.Depth() == 8)
+				{
+					alpha1 = alpha2 = alpha3 = 
+						overlay.Data()[y * overlay.BytesPerLine() + x];
+				}
+
+				// combine colors in ratio given by alpha channel
+				r2 = ((int)r1 * (255 - alpha1) + r2 * alpha1) / 255;
+				g2 = ((int)g1 * (255 - alpha2) + g2 * alpha2) / 255;
+				b2 = ((int)b1 * (255 - alpha3) + b2 * alpha3) / 255;
+
+				// put combined data into base
+				r1 = (unsigned char)r2;
+				g1 = (unsigned char)g2;
+				b1 = (unsigned char)b2;
+			}
+		}
+	}
+}
 

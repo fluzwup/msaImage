@@ -86,12 +86,13 @@ public:
 	void MultiplyImages(msaImage &input, msaImage &output);
 	void DivideImages(msaImage &input, msaImage &output);
 
-	// simple overlay function; if overlay image is 32 bit, then alpha channel will be used
-	void OverlayImage(msaImage &overlay, int x, int y, int w, int h, msaImage &output);
+	// TODO:  Overlay functions
+	// simple overlay function; if images are 32 bit, then alpha channel will be used
+	void OverlayImage(msaImage &overlay, int x, int y, int w, int h);
 
 	// mask may be gray for alpha channel, or RGB for stained glass transparency
 	// mask and overlay must be same size
-	void OverlayImage(msaImage &overlay, msaImage &mask, int x, int y, int w, int h, msaImage &output);
+	void OverlayImage(msaImage &overlay, msaImage &mask, int x, int y, int w, int h);
 
 protected:
 	// apply a transform to the given data type

@@ -138,7 +138,7 @@ public:
 		c_ = -c / temp;
 
 		e_ = (f * b - e * d) / temp;
-		f_ = (e * c - f * a) / temp;		
+		f_ = (e * c - f * a) / temp;
 	};
 
 	inline void Transform(double &x, double &y)

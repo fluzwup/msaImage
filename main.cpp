@@ -307,25 +307,23 @@ int main(int argc, char **argv)
 	p.b = 255;
 	p.a = 255;
 	
-	input.SimpleConvert(32, p, image);
 
 	msaFilters filter;
 
-	filter.SetType(msaFilters::FilterType::Median, 5, 5);
-	filter.FilterImage(image, output);
-	SaveBitmap32("median32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
-
-	filter.SetType(msaFilters::FilterType::Dilate, 5, 5);
-	filter.FilterImage(image, output);
-	SaveBitmap32("dilate32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
-
 	filter.SetType(msaFilters::FilterType::Erode, 5, 5);
-	filter.FilterImage(image, output);
-	SaveBitmap32("erode32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+	filter.FilterImage(input, output);
+	SaveBitmap24("erode24.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
 
-	filter.SetType(msaFilters::FilterType::Gaussian, 5, 5);
-	filter.FilterImage(image, output);
-	SaveBitmap32("gaussian32.bmp", output.Width(), output.Height(), output.BytesPerLine(), output.Data());
+	msaImage alpha;
+	p.r = 127;
+	p.g = 127;
+	p.b = 127;
+	alpha.CreateImage(input.Width(), input.Height(), 8, p);
+	input.AddAlphaChannel(alpha, output);
+
+	output.SimpleConvert(32, p, image);
+	image.OverlayImage(output, 50, 50, 100, 100);
+	SaveBitmap32("overlay32.bmp", image.Width(), image.Height(), image.BytesPerLine(), image.Data());
 
 	delete[] data;
 
