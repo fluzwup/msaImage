@@ -1,7 +1,8 @@
 
 BINARY = imgtest
 
-CXXSOURCES = main.cpp msaImage.cpp ColorspaceConversion.cpp msaFilters.cpp
+CXXSOURCES = main.cpp msaImage.cpp ColorspaceConversion.cpp msaFilters.cpp pngIO.cpp bmpIO.cpp\
+	     msaAnalysis.cpp
 
 OBJECTS = ${CXXSOURCES:.cpp=.o} ${CSOURCES:.c=.o} 
 
@@ -9,7 +10,7 @@ INCLUDES = -I .
 
 LOCATIONS = 
 
-LIBRARIES = 
+LIBRARIES = -lpng
 
 CXXFLAGS = -ggdb -Wall
 CFLAGS = -ggdb -Wall

@@ -109,6 +109,7 @@ void msaFilters::FilterImage(msaImage &input, msaImage &output)
 	}
 
 	// create the output image and give it the filtered data
+	// if input == output, then it will free up the input data
 	output.TakeExternalData(input.Width(), input.Height(), input.BytesPerLine(), input.Depth(), outdata);
 }
 

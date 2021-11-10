@@ -40,6 +40,7 @@ public:
 	// predefiend filters
 	void SetType(FilterType type, int w, int h);
 	// apply filter to the image
+	void FilterImage(msaImage &input) { FilterImage(input, input); };
 	void FilterImage(msaImage &input, msaImage &output);
 
 protected:

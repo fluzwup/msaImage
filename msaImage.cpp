@@ -23,7 +23,24 @@ msaImage::~msaImage()
 	depth = 0;
 }
 
+void msaImage::MoveData(msaImage &other)
+{
+	// delete data, if any
+	if(ownsData && data != NULL)
+		delete[] data;
 
+	// move all the attributes of the other image over
+	ownsData = other.OwnsData();
+	data = other.Data();
+	width = other.Width();
+	depth = other.Depth();
+	height = other.Height();
+	bytesPerLine = other.BytesPerLine();
+
+	// clear out the other image, but don't let it delete data
+	other.ownsData = false;
+	other.CreateImage(0, 0, 0);
+}
 bool msaImage::OwnsData()
 {
 	return ownsData;
@@ -104,14 +121,19 @@ void msaImage::CreateImage(int w, int h, int d)
 {
 	if(ownsData) delete[] data;
 	data = NULL;
+	bytesPerLine = 0;
 
 	width = w;
 	height = h;
 	depth = d;
-	bytesPerLine = ((w * depth / 8) + 3) / 4 * 4; // round up to 4 byte multiple
 	ownsData = true;
 
-	data = new unsigned char[height * bytesPerLine];
+	// if width or height are zero, don't allocate data, just leave the image empty
+	if(w > 0 && h > 0)
+	{
+		bytesPerLine = ((w * depth / 8) + 3) / 4 * 4; // round up to 4 byte multiple
+		data = new unsigned char[height * bytesPerLine];
+	}
 }
 
 void msaImage::CreateImage(int w, int h, int d, const msaPixel &fill)
@@ -1212,8 +1234,10 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, int &widt
 	return output;
 }
 
-void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
+void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 {
+	msaImage output;
+
 	// if no change in depth, just copy the image
 	if(depth == newDepth)
 	{
@@ -1331,13 +1355,16 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &output)
 	}
 	else
 		throw "Invalid image depth";
+
+	outputref.MoveData(output);
 }
 
-void msaImage::ColorMap(msaPixel map[256], msaImage &output)
+void msaImage::ColorMap(msaPixel map[256], msaImage &outputref)
 {
 	if(depth != 8)
 		throw "ColorMap can only be applied to an 8 bit image.";
 
+	msaImage output;
 	output.CreateImage(width, height, 24);
 	
 	for(int y = 0; y < height; ++y)
@@ -1351,14 +1378,16 @@ void msaImage::ColorMap(msaPixel map[256], msaImage &output)
 			*line++ = pixel.b;
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::RemapBrightness(unsigned char map[256], msaImage &output)
+void msaImage::RemapBrightness(unsigned char map[256], msaImage &outputref)
 {
 	if(depth != 8)
 		throw "RemapBrightness can only be applied to an 8 bit image.";
 
-	output.CreateImage(width, height, 24);
+	msaImage output;
+	output.CreateImage(width, height, 8);
 	
 	for(int y = 0; y < height; ++y)
 	{
@@ -1368,9 +1397,10 @@ void msaImage::RemapBrightness(unsigned char map[256], msaImage &output)
 			*line++ = map[data[y * bytesPerLine + x]];
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &output)
+void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &outputref)
 {
 	if(depth != 24)
 		throw "Alpha channel can only be applied to a 24 bit image.";
@@ -1378,6 +1408,7 @@ void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &output)
 	if(alpha.Depth() != 8)
 		throw "Alpha channel must be an 8 bit image.";
 
+	msaImage output;
 	output.CreateImage(width, height, 32);
 	
 	for(int y = 0; y < height; ++y)
@@ -1393,6 +1424,7 @@ void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &output)
 			*outLine++ = *alphaLine++;  // alpha
 		}
 	}
+	outputref.MoveData(output);
 }
 
 void msaImage::ComposeRGB(msaImage &red, msaImage &green, msaImage &blue)
@@ -1656,12 +1688,13 @@ void msaImage::SplitHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage &
 	}
 }
 
-void msaImage::MinImages(msaImage &input, msaImage &output)
+void msaImage::MinImages(msaImage &input, msaImage &outputref)
 {
 	// make sure input image matches dimensions
 	if(depth != input.Depth() || width != input.Width() || height != input.Height())
 		throw "Input images must match in size and color depth.";
 
+	msaImage output;
 	output.CreateImage(width, height, depth);
 
 	for(int y = 0; y < height; ++y)
@@ -1676,14 +1709,16 @@ void msaImage::MinImages(msaImage &input, msaImage &output)
 			*out++ = c1 > c2 ? c2 : c1;
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::MaxImages(msaImage &input, msaImage &output)
+void msaImage::MaxImages(msaImage &input, msaImage &outputref)
 {
 	// make sure input image matches dimensions
 	if(depth != input.Depth() || width != input.Width() || height != input.Height())
 		throw "Input images must match in size and color depth.";
 
+	msaImage output;
 	output.CreateImage(width, height, depth);
 
 	for(int y = 0; y < height; ++y)
@@ -1698,14 +1733,16 @@ void msaImage::MaxImages(msaImage &input, msaImage &output)
 			*out++ = c1 > c2 ? c1 : c2;
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::SumImages(msaImage &input, msaImage &output)
+void msaImage::SumImages(msaImage &input, msaImage &outputref)
 {
 	// make sure input image matches dimensions
 	if(depth != input.Depth() || width != input.Width() || height != input.Height())
 		throw "Input images must match in size and color depth.";
 
+	msaImage output;
 	output.CreateImage(width, height, depth);
 
 	for(int y = 0; y < height; ++y)
@@ -1719,14 +1756,16 @@ void msaImage::SumImages(msaImage &input, msaImage &output)
 			*out++ = (unsigned char)sum / 2;
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::DiffImages(msaImage &input, msaImage &output)
+void msaImage::DiffImages(msaImage &input, msaImage &outputref)
 {
 	// make sure input image matches dimensions
 	if(depth != input.Depth() || width != input.Width() || height != input.Height())
 		throw "Input images must match in size and color depth.";
 
+	msaImage output;
 	output.CreateImage(width, height, depth);
 
 	for(int y = 0; y < height; ++y)
@@ -1740,14 +1779,16 @@ void msaImage::DiffImages(msaImage &input, msaImage &output)
 			*out++ = (unsigned char)(127 + diff / 2);
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::MultiplyImages(msaImage &input, msaImage &output)
+void msaImage::MultiplyImages(msaImage &input, msaImage &outputref)
 {
 	// make sure input image matches dimensions
 	if(depth != input.Depth() || width != input.Width() || height != input.Height())
 		throw "Input images must match in size and color depth.";
 
+	msaImage output;
 	output.CreateImage(width, height, depth);
 
 	for(int y = 0; y < height; ++y)
@@ -1761,14 +1802,16 @@ void msaImage::MultiplyImages(msaImage &input, msaImage &output)
 			*out++ = (unsigned char)(m / 256);
 		}
 	}
+	outputref.MoveData(output);
 }
 
-void msaImage::DivideImages(msaImage &input, msaImage &output)
+void msaImage::DivideImages(msaImage &input, msaImage &outputref)
 {
 	// make sure input image matches dimensions
 	if(depth != input.Depth() || width != input.Width() || height != input.Height())
 		throw "Input images must match in size and color depth.";
 
+	msaImage output;
 	output.CreateImage(width, height, depth);
 
 	for(int y = 0; y < height; ++y)
@@ -1778,16 +1821,26 @@ void msaImage::DivideImages(msaImage &input, msaImage &output)
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
 		for(int x = 0; x < width; ++x)
 		{
-			int d = *in1++ * 256 / *in2++;
+			// add one to divisor to avoid divide by zero
+			int d = *in1++ * 256 / (1 + *in2++);
 			*out++ = (unsigned char)d;
 		}
 	}
+	outputref.MoveData(output);
 }
 
 void msaImage::OverlayImage(msaImage &overlay, int destx, int desty, int w, int h)
 {
 	if(depth != overlay.Depth())
 		throw "Overlay image must match depth of base image";
+
+	// clip width and height
+	if(destx + w >= width) w = width - destx - 1;
+	if(desty + h >= height) h = height - desty - 1;
+
+	if(w <= 0 || h <= 0) 
+		throw "Overlay will not fit on image";
+
 
 	// for 8 and 24 bit, just copy the data from the overlay image into the destination rectangle
 	if(depth == 8)
@@ -1876,20 +1929,20 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 			       
 				if(mask.Depth() == 32)
 				{
-					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 4];
-					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 1];
-					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 2];
+					alpha1 = mask.Data()[y * mask.BytesPerLine() + x * 4];
+					alpha2 = mask.Data()[y * mask.BytesPerLine() + x * 4 + 1];
+					alpha3 = mask.Data()[y * mask.BytesPerLine() + x * 4 + 2];
 				}
 				else if(mask.Depth() == 24)
 				{
-					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 3];
-					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 1];
-					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 2];
+					alpha1 = mask.Data()[y * mask.BytesPerLine() + x * 3];
+					alpha2 = mask.Data()[y * mask.BytesPerLine() + x * 3 + 1];
+					alpha3 = mask.Data()[y * mask.BytesPerLine() + x * 3 + 2];
 				}
 				else if(mask.Depth() == 8)
 				{
 					alpha1 = alpha2 = alpha3 = 
-						overlay.Data()[y * overlay.BytesPerLine() + x];
+						mask.Data()[y * mask.BytesPerLine() + x];
 				}
 
 				// combine colors in ratio given by alpha channel
@@ -1923,20 +1976,20 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 			       
 				if(mask.Depth() == 32)
 				{
-					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 4];
-					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 1];
-					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 4 + 2];
+					alpha1 = mask.Data()[y * mask.BytesPerLine() + x * 4];
+					alpha2 = mask.Data()[y * mask.BytesPerLine() + x * 4 + 1];
+					alpha3 = mask.Data()[y * mask.BytesPerLine() + x * 4 + 2];
 				}
 				else if(mask.Depth() == 24)
 				{
-					alpha1 = overlay.Data()[y * overlay.BytesPerLine() + x * 3];
-					alpha2 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 1];
-					alpha3 = overlay.Data()[y * overlay.BytesPerLine() + x * 3 + 2];
+					alpha1 = mask.Data()[y * mask.BytesPerLine() + x * 3];
+					alpha2 = mask.Data()[y * mask.BytesPerLine() + x * 3 + 1];
+					alpha3 = mask.Data()[y * mask.BytesPerLine() + x * 3 + 2];
 				}
 				else if(mask.Depth() == 8)
 				{
 					alpha1 = alpha2 = alpha3 = 
-						overlay.Data()[y * overlay.BytesPerLine() + x];
+						mask.Data()[y * mask.BytesPerLine() + x];
 				}
 
 				// combine colors in ratio given by alpha channel

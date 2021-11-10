@@ -22,6 +22,8 @@ protected:
 	int depth;
 	bool ownsData;
 
+	void MoveData(msaImage &other);
+
 public:
 	msaImage();
 	~msaImage();
@@ -33,6 +35,9 @@ public:
 	int Depth();
 	int BytesPerLine();
 	unsigned char *Data();
+
+	inline unsigned char *GetLine(int y) { return &data[bytesPerLine * y]; };
+	inline unsigned char *GetPixel(int x, int y) { return &data[bytesPerLine * y + x * depth / 8]; };
 	
 	// create a blank image
 	void CreateImage(int width, int height, int depth);
@@ -57,9 +62,11 @@ public:
 	void ColorMap(msaPixel map[256], msaImage &output);
 
 	// remap brightness of a gray image
+	void RemapBrightness(unsigned char map[256]) { RemapBrightness(map, *this); };
 	void RemapBrightness(unsigned char map[256], msaImage &output);
 
 	// compositing function to add 8 bit alpha channel to 24 bit to make 32 bit
+	void AddAlphaChannel(msaImage &alpha);
 	void AddAlphaChannel(msaImage &alpha, msaImage &output);
 
 	// compositing functions add 3 or 4 8 bit images to make a 24 or 32 bit image
@@ -79,14 +86,19 @@ public:
 	void SplitHSVA(msaImage &hue, msaImage &saturation, msaImage &volume, msaImage &alpha);
 
 	// image combination functions
+	void MinImages(msaImage &input) { MinImages(input, *this); };
 	void MinImages(msaImage &input, msaImage &output);
+	void MaxImages(msaImage &input) { MaxImages(input, *this); };
 	void MaxImages(msaImage &input, msaImage &output);
+	void SumImages(msaImage &input) { SumImages(input, *this); };
 	void SumImages(msaImage &input, msaImage &output);
+	void DiffImages(msaImage &input) { DiffImages(input, *this); };
 	void DiffImages(msaImage &input, msaImage &output);
+	void MultiplyImages(msaImage &input) { MultiplyImages(input, *this); };
 	void MultiplyImages(msaImage &input, msaImage &output);
+	void DivideImages(msaImage &input) { DivideImages(input, *this); };
 	void DivideImages(msaImage &input, msaImage &output);
 
-	// TODO:  Overlay functions
 	// simple overlay function; if images are 32 bit, then alpha channel will be used
 	void OverlayImage(msaImage &overlay, int x, int y, int w, int h);
 
