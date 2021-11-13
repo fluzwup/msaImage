@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	int width, height, bpl, depth, dpi;
 	unsigned char *data = NULL;
 
-	if(!LoadPNG("blackbox.png", width, height, bpl, depth, dpi, &data))
+	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
 		return -1;
 
 	msaImage input;
@@ -73,13 +73,9 @@ int main(int argc, char **argv)
 	msaImage gray;
 	input.SimpleConvert(8, p, gray);
 
-	SavePNG("gray.png", gray);
-
 	msaAnalysis analyze;
-	std::vector<long> vproj, hproj;
-	long vmax, hmax;
-	analyze.GenerateProjection(gray, true, vproj, vmax);
-	analyze.GenerateProjection(input, false, hproj, hmax);
+	std::vector<msaObject> objects;
+	analyze.GenerateObjectList(gray, 127, false, objects);
 
 	delete[] data;
 

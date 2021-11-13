@@ -2006,3 +2006,25 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 	}
 }
 
+void msaImage::CreateImageFromRuns(std::vector< std::list <size_t> > &runs)
+{
+	// calculate width by adding up runs in first scanline
+	size_t width = 0;
+	for(size_t len : runs[0])
+		width += len;
+
+	CreateImage(width, runs.size(), 8);
+	for(int y = 0; y < runs.size(); ++y)
+	{
+		unsigned char color = 255;
+		unsigned char *scanline = GetLine(y);
+		int x = 0;
+		for(size_t len : runs[y])
+		{
+			if(len > 0)
+				memset(scanline + x, color, len);
+			color = ~color;
+			x += len;
+		}
+	}
+}		
