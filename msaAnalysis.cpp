@@ -1,6 +1,9 @@
 #include <list>
 #include "msaAnalysis.h"
 
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 // temporary, for debugging
 bool SavePNG(const char *filename, msaImage &img);
 
@@ -67,7 +70,7 @@ void msaAnalysis::GenerateProjection(msaImage &input, bool vertical,
 		if(l > maximum) maximum = l;
 }
 
-void msaAnalysis::RunlengthEncodeImage(msaImage, std::vector< std::list<size_t> > runs, int threshold, bool startBlack)
+void msaAnalysis::RunlengthEncodeImage(msaImage &img, std::vector< std::list<size_t> > runs, int threshold, bool startBlack)
 {
 	runs.clear();
 
@@ -101,8 +104,7 @@ void msaAnalysis::RunlengthEncodeImage(msaImage, std::vector< std::list<size_t> 
 	// NOTE:  Scanlines may start or end with a zero length run
 }
 
-void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, 
-	bool findLight, std::list<msaObject> &objects)
+void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLight, std::list<msaObject> &objects)
 {
 	// don't want to return an incorrect list, to clear out the vector
 	objects.clear();
@@ -110,6 +112,7 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold,
 	// first convert the image to a set of runs, split on the threshold value
 	// for now, assume we're looking for light objects on a dark background
 	// runs will start light, then alternate dark/light/dark...
+	std::vector< std::list<size_t> > runs;
 	RunlengthEncodeImage(img, runs, threshold, findLight);
 
 	if(!findLight)
@@ -137,19 +140,84 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold,
 			{
 				// count number of objects a run intersects
 				int hits = 0;
-				for(msaObject obj : newObjects)
+				// pointer to the last object hit by a run
+				msaObject *lastObj = NULL;
+				for(msaObject &obj : newObjects)
 				{
 					// if a run intersects an open object, add the run to that object
 					// run goes from x to x + len
-					if(
-					// work from back to front in object's list of runs
-					
-					// if a run that has been added to an object intersects another object, merge the objects
-					if(hits > 1)
+					if((x + len < obj.x) || (x > obj.x + obj.width)) continue;
+
+					// in the bounding box, look at obj.runs.back() runs for overlap
+					std::list<size_t> &obj_runs_back = obj.runs.back();
+					bool obj_bg = true;
+					size_t obj_x = 0;
+					for(size_t obj_len : obj_runs_back)
 					{
-					}
+						// ignore bits of run that are part of the background
+						if(obj_bg) continue;
+
+						// object run goes from obj_x to obj_x + obj_len
+						// candidate run goes from x to x + len
+						if((obj_x < x + len) || (obj_x + obj_len > x))
+						{
+							// if this is the first run for this line in this object, 
+							if(hits == 0)
+							{
+								// expand the bounding box
+								++obj.height;
+								//  then set up the new entry in the vector
+								obj.runs.resize(obj.runs.size() + 1);
+								//  and set to the length of the background run to this point
+								obj.runs.back().push_back(x);
+	
+								// keep a pointer handy for additional hits
+								lastObj = &obj;
+							}
+							// see if this is a second or later hit on an object; if so, merge them
+							if(++hits > 1)
+							{
+								// merge runs first; new run has already been added to obj
+								// TODO: need to line up runs, and combine them in horizontal order
+								// probably need to conver to start/end, since they may be interleaved between objects
+	
+								// now find new bounding box
+								size_t new_left = MIN(obj.x, lastObj->x);
+								size_t new_top = MIN(obj.y, lastObj->y);
+								size_t new_right = MAX(obj.x + obj.width, lastObj->x + lastObj->width);
+								size_t new_bottom = MAX(obj.y + obj.height, lastObj->y + lastObj->height);
+								obj.x = new_left;
+								obj.y = new_top;
+								obj.width = new_right - new_left;
+								obj.height = new_bottom - new_top;
+	
+								// now zero out lastObj
+								lastObj->x = 0;
+								lastObj->y = 0;
+								lastObj->width = 0;
+								lastObj->height = 0;
+								lastObj->runs.resize(0);
+							}
+							else
+							{
+								// obj.runs.back now points to scanline y of the image
+								obj.runs.back().push_back(len);
+							}
+						}
+						obj_bg = !obj_bg;
+						obj_x += len;
+					} 	// end of loop through obj_runs_back
 				}
 				// if a run does not intersect any open object, create a new object with that run
+				msaObject newObj;
+				newObj.x = x;
+				newObj.y = y;
+				newObj.width = len;
+				newObj.height = 1;
+				newObj.runs.resize(1);
+				newObj.runs[0].push_back(x); 	// background run
+				newObj.runs[0].push_back(len);	// top left run of object
+				newObjects.push_back(newObj);
 			}
 
 			// swap color, update x
@@ -160,6 +228,5 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold,
 		// close any open objects with no runs at the current y coordinate
 
 	}
-
 }
 

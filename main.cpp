@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	input.SimpleConvert(8, p, gray);
 
 	msaAnalysis analyze;
-	std::vector<msaObject> objects;
+	std::list<msaObject> objects;
 	analyze.GenerateObjectList(gray, 127, false, objects);
 
 	delete[] data;

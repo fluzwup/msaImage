@@ -2006,7 +2006,7 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 	}
 }
 
-void msaImage::CreateImageFromRuns(std::vector< std::list <size_t> > &runs)
+void msaImage::CreateImageFromRuns(std::vector< std::list <size_t> > &runs, int bg, int fg)
 {
 	// calculate width by adding up runs in first scanline
 	size_t width = 0;
@@ -2016,15 +2016,22 @@ void msaImage::CreateImageFromRuns(std::vector< std::list <size_t> > &runs)
 	CreateImage(width, runs.size(), 8);
 	for(int y = 0; y < runs.size(); ++y)
 	{
-		unsigned char color = 255;
+		// each set of runs starts with background
+		unsigned char color = bg;
 		unsigned char *scanline = GetLine(y);
 		int x = 0;
 		for(size_t len : runs[y])
 		{
 			if(len > 0)
 				memset(scanline + x, color, len);
-			color = ~color;
+			
+			// swap colors
+			if(color == bg) 
+					color = fg;
+			else
+					color = bg;
 			x += len;
 		}
 	}
-}		
+}
+

@@ -1,5 +1,7 @@
 #ifndef _msaImage_included
 #define _msaImage_included
+#include <vector>
+#include <list>
 #include "msaAffine.h"
 
 class msaPixel
@@ -106,6 +108,9 @@ public:
 	// mask and overlay must be same size
 	void OverlayImage(msaImage &overlay, msaImage &mask, int x, int y, int w, int h);
 
+	// create a gray image from a set of runs, using given colors for background and foreground
+	// runs start with background color
+	void CreateImageFromRuns(std::vector< std::list <size_t> > &runs, int bg, int fg);
 protected:
 	// apply a transform to the given data type
 	unsigned char *transformFast32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
