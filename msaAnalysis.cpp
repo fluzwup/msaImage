@@ -1,8 +1,31 @@
 #include <list>
 #include "msaAnalysis.h"
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
+inline size_t MIN(size_t x, size_t y)
+{
+	if(x > y) return y;
+	return x;
+}
+
+inline size_t MAX(size_t x, size_t y)
+{
+	if(x > y) return x;
+	return y;
+}
+
+inline size_t MIN3(size_t x, size_t y, size_t z)
+{
+	if(z > x && y > x) return x;
+	if(z > y && x > y) return y;
+	return z;
+}
+
+inline size_t MAX3(size_t x, size_t y, size_t z)
+{
+	if(x > z && x > y) return x;
+	if(y > z && y > x) return y;
+	return z;
+}
 
 // temporary, for debugging
 bool SavePNG(const char *filename, msaImage &img);
@@ -70,7 +93,7 @@ void msaAnalysis::GenerateProjection(msaImage &input, bool vertical,
 		if(l > maximum) maximum = l;
 }
 
-void msaAnalysis::RunlengthEncodeImage(msaImage &img, std::vector< std::list<size_t> > runs, int threshold, bool startBlack)
+void msaAnalysis::RunlengthEncodeImage(msaImage &img, std::vector< std::list<size_t> > &runs, int threshold, bool startBlack)
 {
 	runs.clear();
 
@@ -132,7 +155,7 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 	for(size_t y = 0; y < runs.size(); ++y)
 	{
 		size_t x = 0;
-		bool bg = false;  // if bg is true, it's a background run, so skip it
+		bool bg = true;  // if bg is true, it's a background run, so skip it
 		// go through runs and compare each run with each object
 		for(size_t len : runs[y])
 		{
@@ -149,75 +172,75 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 					if((x + len < obj.x) || (x > obj.x + obj.width)) continue;
 
 					// in the bounding box, look at obj.runs.back() runs for overlap
-					std::list<size_t> &obj_runs_back = obj.runs.back();
-					bool obj_bg = true;
-					size_t obj_x = 0;
-					for(size_t obj_len : obj_runs_back)
+					std::vector<std::pair<size_t, size_t> > &bottom_runs = obj.runs[y];
+					for(std::pair<size_t, size_t> &obj_run : bottom_runs)
 					{
-						// ignore bits of run that are part of the background
-						if(obj_bg) continue;
-
-						// object run goes from obj_x to obj_x + obj_len
+						// object run goes from obj_run. first to +obj_run.second
 						// candidate run goes from x to x + len
-						if((obj_x < x + len) || (obj_x + obj_len > x))
+						if((obj_run.first < x + len) || (obj_run.first + obj_run.second > x))
 						{
 							// if this is the first run for this line in this object, 
 							if(hits == 0)
 							{
 								// expand the bounding box
 								++obj.height;
-								//  then set up the new entry in the vector
-								obj.runs.resize(obj.runs.size() + 1);
-								//  and set to the length of the background run to this point
-								obj.runs.back().push_back(x);
+								// add run
+								obj.runs[y].push_back(std::pair<size_t, size_t>(x, len));
 	
 								// keep a pointer handy for additional hits
 								lastObj = &obj;
+
+								printf("Expanded object %li to location %li, %li size %li, %li\n",
+									obj.index, obj.x, obj.y, obj.width, obj.height);
 							}
 							// see if this is a second or later hit on an object; if so, merge them
 							if(++hits > 1)
 							{
-								// merge runs first; new run has already been added to obj
-								// TODO: need to line up runs, and combine them in horizontal order
-								// probably need to conver to start/end, since they may be interleaved between objects
-	
-								// now find new bounding box
-								size_t new_left = MIN(obj.x, lastObj->x);
+								// find new bounding box
+								size_t new_left = MIN3(obj.x, lastObj->x, obj_run.first);
 								size_t new_top = MIN(obj.y, lastObj->y);
-								size_t new_right = MAX(obj.x + obj.width, lastObj->x + lastObj->width);
+								size_t new_right = MAX3(obj.x + obj.width, lastObj->x + lastObj->width, 
+												obj_run.first + obj_run.second);
 								size_t new_bottom = MAX(obj.y + obj.height, lastObj->y + lastObj->height);
+
 								obj.x = new_left;
 								obj.y = new_top;
 								obj.width = new_right - new_left;
 								obj.height = new_bottom - new_top;
+	
+								// add all the runs from lastObj to obj
+								for(size_t run_y = lastObj->y; run_y <= lastObj->y + lastObj->height; ++run_y)
+									for(std::pair<size_t, size_t> a_run : lastObj->runs[run_y])
+											obj.runs[run_y].push_back(a_run);
 	
 								// now zero out lastObj
 								lastObj->x = 0;
 								lastObj->y = 0;
 								lastObj->width = 0;
 								lastObj->height = 0;
-								lastObj->runs.resize(0);
-							}
-							else
-							{
-								// obj.runs.back now points to scanline y of the image
-								obj.runs.back().push_back(len);
+								lastObj->runs.clear();
+
+								printf("Zeroed object %li, expanded object %li to location %li, %li size %li, %li\n",
+									lastObj->index, obj.index, obj.x, obj.y, obj.width, obj.height);
 							}
 						}
-						obj_bg = !obj_bg;
-						obj_x += len;
-					} 	// end of loop through obj_runs_back
+					}
 				}
 				// if a run does not intersect any open object, create a new object with that run
-				msaObject newObj;
-				newObj.x = x;
-				newObj.y = y;
-				newObj.width = len;
-				newObj.height = 1;
-				newObj.runs.resize(1);
-				newObj.runs[0].push_back(x); 	// background run
-				newObj.runs[0].push_back(len);	// top left run of object
-				newObjects.push_back(newObj);
+				if(hits == 0)
+				{
+					msaObject newObj;
+					newObj.x = x;
+					newObj.y = y;
+					newObj.width = len;
+					newObj.height = 1;
+					newObj.runs[y].push_back(std::pair<size_t, size_t>(x, len)); 	// initial run
+					newObj.index = newObjects.size();
+					newObjects.push_back(newObj);
+
+					printf("Created new object %li, location %li, %li size %li, %li\n",
+						newObj.index, newObj.x, newObj.y, newObj.width, newObj.height);
+				}
 			}
 
 			// swap color, update x
