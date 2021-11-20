@@ -161,6 +161,7 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 		{
 			if(!bg)
 			{
+				printf("Run %li, %li to %li  ", y, x, len);
 				// count number of objects a run intersects
 				int hits = 0;
 				// pointer to the last object hit by a run
@@ -171,8 +172,8 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 					// run goes from x to x + len
 					if((x + len < obj.x) || (x > obj.x + obj.width)) continue;
 
-					// in the bounding box, look at obj.runs.back() runs for overlap
-					std::vector<std::pair<size_t, size_t> > &bottom_runs = obj.runs[y];
+					// we overlay the bounding box, look at the last runs in the object
+					std::vector<std::pair<size_t, size_t> > &bottom_runs = obj.runs[y - 1];
 					for(std::pair<size_t, size_t> &obj_run : bottom_runs)
 					{
 						// object run goes from obj_run. first to +obj_run.second
@@ -182,46 +183,60 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 							// if this is the first run for this line in this object, 
 							if(hits == 0)
 							{
-								// expand the bounding box
-								++obj.height;
+								// expand the bounding box if needed
+								obj.height = y - obj.y + 1;
 								// add run
 								obj.runs[y].push_back(std::pair<size_t, size_t>(x, len));
 	
 								// keep a pointer handy for additional hits
 								lastObj = &obj;
 
-								printf("Expanded object %li to location %li, %li size %li, %li\n",
+								printf("Expanded object %li to location %li, %li size %li, %li run count %li\n",
 									obj.index, obj.x, obj.y, obj.width, obj.height);
 							}
-							// see if this is a second or later hit on an object; if so, merge them
+							// see if this is a second or later hit on an object;
 							if(++hits > 1)
 							{
-								// find new bounding box
-								size_t new_left = MIN3(obj.x, lastObj->x, obj_run.first);
-								size_t new_top = MIN(obj.y, lastObj->y);
-								size_t new_right = MAX3(obj.x + obj.width, lastObj->x + lastObj->width, 
-												obj_run.first + obj_run.second);
-								size_t new_bottom = MAX(obj.y + obj.height, lastObj->y + lastObj->height);
+								// if it's the second hit on the same object, then just add the run
+								if(lastObj == &obj)
+								{
+									obj.runs[y].push_back(std::pair<size_t, size_t>(x, len));
+									printf("Added run to object %li,  run count %li\n",
+										obj.index, obj.runs[y].size());
+								}
+								// if it's a hit on a different object, then merge
+								else if(lastObj->width > 0)		
+								{
+									// find new bounding box
+									size_t new_left = MIN3(obj.x, lastObj->x, obj_run.first);
+									size_t new_top = MIN(obj.y, lastObj->y);
+									size_t new_right = MAX3(obj.x + obj.width, lastObj->x + lastObj->width, 
+													obj_run.first + obj_run.second);
+									size_t new_bottom = MAX(obj.y + obj.height, lastObj->y + lastObj->height);
 
-								obj.x = new_left;
-								obj.y = new_top;
-								obj.width = new_right - new_left;
-								obj.height = new_bottom - new_top;
-	
-								// add all the runs from lastObj to obj
-								for(size_t run_y = lastObj->y; run_y <= lastObj->y + lastObj->height; ++run_y)
-									for(std::pair<size_t, size_t> a_run : lastObj->runs[run_y])
-											obj.runs[run_y].push_back(a_run);
-	
-								// now zero out lastObj
-								lastObj->x = 0;
-								lastObj->y = 0;
-								lastObj->width = 0;
-								lastObj->height = 0;
-								lastObj->runs.clear();
+									obj.x = new_left;
+									obj.y = new_top;
+									obj.width = new_right - new_left;
+									obj.height = new_bottom - new_top;
+		
+									// add all the runs from lastObj to obj
+									for(size_t run_y = lastObj->y; run_y <= lastObj->y + lastObj->height; ++run_y)
+										for(std::pair<size_t, size_t> a_run : lastObj->runs[run_y])
+												obj.runs[run_y].push_back(a_run);
+		
+									// now zero out lastObj
+									lastObj->x = 0;
+									lastObj->y = 0;
+									lastObj->width = 0;
+									lastObj->height = 0;
+									lastObj->runs.clear();
 
-								printf("Zeroed object %li, expanded object %li to location %li, %li size %li, %li\n",
-									lastObj->index, obj.index, obj.x, obj.y, obj.width, obj.height);
+									printf("Zeroed object %li, expanded object %li to location %li, %li size %li, %li\n",
+										lastObj->index, obj.index, obj.x, obj.y, obj.width, obj.height);
+
+									// current object now becomes lastObj
+									lastObj = &obj;
+								}
 							}
 						}
 					}
@@ -247,9 +262,10 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 			bg = !bg;
 			x += len;
 		}
-
-		// close any open objects with no runs at the current y coordinate
-
 	}
+
+	// copy extent objects from newObjects to objects
+	for(msaObject &o : newObjects)
+		if(o.width != 0) objects.push_back(o);
 }
 

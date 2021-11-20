@@ -77,6 +77,12 @@ int main(int argc, char **argv)
 	std::list<msaObject> objects;
 	analyze.GenerateObjectList(gray, 127, false, objects);
 
+	printf("Found %zu objects\n", objects.size());
+	for(msaObject &o : objects)
+	{
+		printf("location %5zu, %5zu size %5zu, %5zu\n", o.x, o.y, o.width, o.height);
+	}
+
 	delete[] data;
 
 	return 0;
