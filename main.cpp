@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	int width, height, bpl, depth, dpi;
 	unsigned char *data = NULL;
 
-	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
+	if(!LoadPNG("interleaving.png", width, height, bpl, depth, dpi, &data))
 		return -1;
 
 	msaImage input;
