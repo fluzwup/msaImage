@@ -6,6 +6,7 @@
 #include <string>
 
 #include "msaImage.h"
+#include "msaAffine.h"
 #include "ColorspaceConversion.h"
 #include "msaFilters.h"
 #include "msaAnalysis.h"
@@ -60,19 +61,19 @@ int main(int argc, char **argv)
 	size_t width, height, bpl, depth, dpi;
 	unsigned char *data = NULL;
 
-	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
+	if(!LoadPNG("interleaved_horizontal.png", width, height, bpl, depth, dpi, &data))
 		return -1;
 
 	msaImage input;
 	input.UseExternalData(width, height, bpl, depth, data);
 
-	msaPixel p;
-	p.r = 255;
-	p.g = 255;
-	p.b = 255;
-	p.a = 255;
+	msaPixel white;
+	white.r = 255;
+	white.g = 255;
+	white.b = 255;
+	white.a = 255;
 	msaImage gray;
-	input.SimpleConvert(8, p, gray);
+	input.SimpleConvert(8, white, gray);
 
 	msaAnalysis analyze;
 	std::list<msaObject> objects;
@@ -80,19 +81,21 @@ int main(int argc, char **argv)
 
 	printf("Found %zu objects\n", objects.size());
 
-	msaPixel bg, fg;
-	bg.r = bg.g = bg.b = 255; bg.a = 255;
-	fg.r = fg.g = fg.b = 0; bg.a = 255;
+	msaPixel black;
+	black.r = 0;
+	black.g = 0;
+	black.b = 0;
+	black.a = 255;
 
 	msaImage imgObject;
-	imgObject.CreateImage(gray.Width(), gray.Height(), 32, bg);
+	imgObject.CreateImage(gray.Width(), gray.Height(), 32, white);
 
 	for(msaObject &o : objects)
 	{
 		printf("index %zu, location %5zu, %5zu size %5zu, %5zu\n", 
 						o.index, o.x, o.y, o.width, o.height);
 
-		o.AddObjectToImage(imgObject, fg);
+		o.AddObjectToImage(imgObject, black);
 
 		std::string filename = "object" + std::to_string(o.index) + ".png";
 		SavePNG(filename.c_str(), imgObject);

@@ -69,10 +69,10 @@ public:
 		oob_r = 127;
 		oob_g = 127;
 		oob_b = 127;
-		oob_b = 255;
+		oob_a = 255;
 	};
 
-	void GetNewSize(int w, int h, double scaling, double rotation, int &wNew, int &hNew)
+	inline void GetNewSize(int w, int h, double scaling, double rotation, int &wNew, int &hNew)
 	{
 		// set up temporary transform
 		msaAffineTransform temp;
@@ -115,20 +115,28 @@ public:
 		hNew = (int)(maxY - minY + .99999);
 	};
 
-	void SetTransform(double scaling, double rotation, int w, int h)
+	inline void SetTransform(double scaling, double rotation, size_t w, size_t h)
 	{
-		a = scaling * cos(rotation);
-		b = scaling * -sin(rotation);
-		c = scaling * sin(rotation);
-		d = scaling * cos(rotation);
-		e = (double)w / 2.0 * ((double)1.0 - cos(rotation)) + (double)h / (double)2.0 * sin(rotation);
-		f = (double)h / 2.0 * ((double)1.0 - cos(rotation)) - (double)w / (double)2.0 * sin(rotation);
+		// cache these so we only calculate them once
+		double cosrot = cos(rotation);
+		double sinrot = sin(rotation);
+
+		// if values are near zero, set to zero
+		if(abs(cosrot) < 1.0e-15) cosrot = 0;
+		if(abs(sinrot) < 1.0e-15) sinrot = 0;
+
+		a = scaling * cosrot;
+		b = scaling * -sinrot;
+		c = scaling * sinrot;
+		d = scaling * cosrot;
+		e = (double)w / 2.0 * ((double)1.0 - cosrot) + (double)h / (double)2.0 * sinrot;
+		f = (double)h / 2.0 * ((double)1.0 - cosrot) - (double)w / (double)2.0 * sinrot;
 
 		// calculate inverse
 		double temp = a * d - b * c;
 
 		// don't invert if it'll cause an overflow or divide by zero
-		if (fabs(temp)  < 1.0e-50)
+		if (fabs(temp)  < 1.0e-15)
 			return;
 
 		a_ = d / temp;
