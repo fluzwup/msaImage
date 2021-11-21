@@ -4,6 +4,8 @@
 #include <list>
 #include "msaAffine.h"
 
+// alpha 0 is transparent, 255 is opaque
+// if pixel is interpreted as gray, r will be used for intensity
 class msaPixel
 {
 public:
@@ -11,17 +13,25 @@ public:
 	unsigned char g;
 	unsigned char b;
 	unsigned char a;
+	inline bool operator==(const msaPixel &rhs)
+	{
+		if(r != rhs.r) return false;
+		if(g != rhs.g) return false;
+		if(b != rhs.b) return false;
+		if(a != rhs.a) return false;
+		return true;
+	};
 };
 
-// depths 1 for bitonal, 8 for grayscale, 24 for RGB, 32 for RGBA
+// depths 8 for grayscale, 24 for RGB, 32 for RGBA
 class msaImage
 {
 protected:
-	int width;
-	int height;
-	int bytesPerLine;
+	size_t width;
+	size_t height;
+	size_t bytesPerLine;
 	unsigned char *data;
-	int depth;
+	size_t depth;
 	bool ownsData;
 
 	void MoveData(msaImage &other);
@@ -32,33 +42,92 @@ public:
 
 	// accessor functions
 	bool OwnsData();
-	int Width();
-	int Height();
-	int Depth();
-	int BytesPerLine();
+	size_t Width();
+	size_t Height();
+	size_t Depth();
+	size_t BytesPerLine();
 	unsigned char *Data();
 
-	inline unsigned char *GetLine(int y) { return &data[bytesPerLine * y]; };
-	inline unsigned char *GetPixel(int x, int y) { return &data[bytesPerLine * y + x * depth / 8]; };
+	// access to raw data
+	inline unsigned char *GetRawLine(size_t y) { return &data[bytesPerLine * y]; };
+	inline unsigned char *GetRawPixel(size_t x, size_t y) 
+	{ 
+			return &data[bytesPerLine * y + x * depth / 8]; 
+	};
+
+	// access msaPixel access
+	inline msaPixel GetPixel(size_t x, size_t y)
+	{
+		msaPixel p;
+		unsigned char *raw = GetRawPixel(x, y);
+		switch(depth)
+		{
+			case 8:
+				p.r = *raw;
+				p.g = p.r;
+				p.b = p.r;
+				p.a = 255;
+				break;
+			case 24:
+				p.r = *raw++;
+				p.g = *raw++;
+				p.b = *raw;
+				p.a = 255;
+				break;
+			case 32:
+				p.r = *raw++;
+				p.g = *raw++;
+				p.b = *raw++;
+				p.a = *raw;
+				break;
+			default:
+				throw "Invalid depth";
+		}
+		return p;
+	};
+
+	inline void SetPixel(size_t x, size_t y, msaPixel p)
+	{
+		unsigned char *raw = GetRawPixel(x, y);
+		switch(depth)
+		{
+			case 8:
+				*raw = p.r;
+				break;
+			case 24:
+				*raw++ = p.r;
+				*raw++ = p.g;
+				*raw = p.b;
+				break;
+			case 32:
+				*raw++ = p.r;
+				*raw++ = p.g;
+				*raw++ = p.b;
+				*raw = p.a;
+				break;
+			default:
+				throw "Invalid depth";
+		}
+	};
 	
 	// create a blank image
-	void CreateImage(int width, int height, int depth);
+	void CreateImage(size_t width, size_t height, size_t depth);
 	// create solid color image
-	void CreateImage(int width, int height, int depth, const msaPixel &fill);
+	void CreateImage(size_t width, size_t height, size_t depth, const msaPixel &fill);
 
 	// point to data in an external buffer, don't own the buffer
-	void UseExternalData(int width, int height, int bytesPerLine, int depth, unsigned char *data);
+	void UseExternalData(size_t width, size_t height, size_t bytesPerLine, size_t depth, unsigned char *data);
 	// point to data in an external buffer, do own the buffer (buffer must be allocated with new[]
-	void TakeExternalData(int width, int height, int bytesPerLine, int depth, unsigned char *data);
+	void TakeExternalData(size_t width, size_t height, size_t bytesPerLine, size_t depth, unsigned char *data);
 	// copy data in from an external buffer
-	void SetCopyData(int width, int height, int bytesPerLine, int depth, unsigned char *data);
+	void SetCopyData(size_t width, size_t height, size_t bytesPerLine, size_t depth, unsigned char *data);
 
-	void TransformImage(msaAffineTransform &trans, msaImage &output, int quality);
+	void TransformImage(msaAffineTransform &trans, msaImage &output, size_t quality);
 
 	// going from 8 bit to 24 or 32 bit, use color as white point, and scale accordingly
 	// going from to 32 bit, copy alpha channel from color to whole image
 	// going from color to 8 bit, use color as relative brightness of each color component
-	void SimpleConvert(int newDepth, msaPixel &color, msaImage &output);
+	void SimpleConvert(size_t newDepth, msaPixel &color, msaImage &output);
 
 	// gray to 24 bit color conversion with 256 element array of pixels, to do false color mapping
 	void ColorMap(msaPixel map[256], msaImage &output);
@@ -102,28 +171,28 @@ public:
 	void DivideImages(msaImage &input, msaImage &output);
 
 	// simple overlay function; if images are 32 bit, then alpha channel will be used
-	void OverlayImage(msaImage &overlay, int x, int y, int w, int h);
+	void OverlayImage(msaImage &overlay, size_t x, size_t y, size_t w, size_t h);
 
 	// mask may be gray for alpha channel, or RGB for stained glass transparency
 	// mask and overlay must be same size
-	void OverlayImage(msaImage &overlay, msaImage &mask, int x, int y, int w, int h);
+	void OverlayImage(msaImage &overlay, msaImage &mask, size_t x, size_t y, size_t w, size_t h);
 
 	// create a gray image from a set of runs, using given colors for background and foreground
 	// runs start with background color
-	void CreateImageFromRuns(std::vector< std::list <size_t> > &runs, int bg, int fg);
+	void CreateImageFromRuns(std::vector< std::list <size_t> > &runs, size_t depth, msaPixel bg, msaPixel fg);
 protected:
 	// apply a transform to the given data type
-	unsigned char *transformFast32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
-	unsigned char *transformBetter32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
-	unsigned char *transformBest32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
+	unsigned char *transformFast32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformBetter32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformBest32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
 
-	unsigned char *transformFast24(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
-	unsigned char *transformBetter24(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
-	unsigned char *transformBest24(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
+	unsigned char *transformFast24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformBetter24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformBest24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
 	
-	unsigned char *transformFast8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
-	unsigned char *transformBetter8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
-	unsigned char *transformBest8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input);
+	unsigned char *transformFast8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformBetter8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformBest8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
 };
 #endif
 

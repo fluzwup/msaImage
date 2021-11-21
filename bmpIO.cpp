@@ -3,7 +3,7 @@
 #include "bmpIO.h"
 
 // this only handles 8, 24, and 32 bit bitmaps, and treats all 8 bit as gray
-bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigned char **pdata)
+bool LoadBitmap(const char *filename, size_t &width, size_t &height, size_t &bpl, unsigned char **pdata)
 {
 	BITMAPINFOHEADER bmih;
 	BITMAPFILEHEADER bmfh;
@@ -29,7 +29,7 @@ bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigne
 	unsigned char *data = new unsigned char[bytes];
 
 	// bitmaps are stored bottom up, so read in rightside up
-	for(int y = height - 1; y >= 0; --y)
+	for(size_t y = height - 1; y >= 0; --y)
 	{
 		unsigned char *line = data + bpl * y;
 		fread(line, bpl, 1, fp);
@@ -38,7 +38,7 @@ bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigne
 		switch(bytesPerPixel)
 		{
 		case 3:	// 24 bit
-			for(int x = 0; x < width  * 3; x += 3)
+			for(size_t x = 0; x < width  * 3; x += 3)
 			{
 				unsigned char temp = line[x];
 				line[x] = line[x + 2];
@@ -47,7 +47,7 @@ bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigne
 			break;
 		case 4: // 32 bit
 			// bitmaps are also BGR, convert to RGB, leave alpha
-			for(int x = 0; x < width  * 4; x += 4)
+			for(size_t x = 0; x < width  * 4; x += 4)
 			{
 				unsigned char temp = line[x];
 				line[x] = line[x + 2];
@@ -63,7 +63,7 @@ bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigne
 	return true;
 }
 
-bool SaveBitmap24(const char *filename, int width, int height, int bpl, unsigned char *output)
+bool SaveBitmap24(const char *filename, size_t width, size_t height, size_t bpl, unsigned char *output)
 {
 	BITMAPINFOHEADER bmih;
 	BITMAPFILEHEADER bmfh;
@@ -104,12 +104,12 @@ bool SaveBitmap24(const char *filename, int width, int height, int bpl, unsigned
 	unsigned char outline[outbpl];
 
 	// flip to upside down
-	for(int y = height - 1; y >= 0; --y)
+	for(size_t y = height - 1; y >= 0; --y)
 	{
 		unsigned char *line = output + bpl * y;
 
 		// convert to RGB to BGR
-		for(int x = 0; x < width  * 3; x += 3)
+		for(size_t x = 0; x < width  * 3; x += 3)
 		{
 			outline[x + 2] =  line[x];
 			outline[x + 1] =  line[x + 1];
@@ -123,7 +123,7 @@ bool SaveBitmap24(const char *filename, int width, int height, int bpl, unsigned
 	return true;
 }
 
-bool SaveBitmap32(const char *filename, int width, int height, int bpl, unsigned char *output)
+bool SaveBitmap32(const char *filename, size_t width, size_t height, size_t bpl, unsigned char *output)
 {
 	BITMAPINFOHEADER bmih;
 	BITMAPFILEHEADER bmfh;
@@ -164,12 +164,12 @@ bool SaveBitmap32(const char *filename, int width, int height, int bpl, unsigned
 	unsigned char outline[outbpl];
 
 	// flip to upside down
-	for(int y = height - 1; y >= 0; --y)
+	for(size_t y = height - 1; y >= 0; --y)
 	{
 		unsigned char *line = output + bpl * y;
 
 		// convert to RGB to BGR
-		for(int x = 0; x < width  * 4; x += 4)
+		for(size_t x = 0; x < width  * 4; x += 4)
 		{
 			outline[x + 2] =  line[x];
 			outline[x + 1] =  line[x + 1];
@@ -185,7 +185,7 @@ bool SaveBitmap32(const char *filename, int width, int height, int bpl, unsigned
 	return true;
 }
 
-bool SaveBitmap8(const char *filename, int width, int height, int bpl, unsigned char *output)
+bool SaveBitmap8(const char *filename, size_t width, size_t height, size_t bpl, unsigned char *output)
 {
 	BITMAPINFOHEADER bmih;
 	BITMAPFILEHEADER bmfh;
@@ -232,7 +232,7 @@ bool SaveBitmap8(const char *filename, int width, int height, int bpl, unsigned 
 	fwrite(&palette, sizeof(palette), 1, fp);
 
 	// flip to upside down
-	for(int y = height - 1; y >= 0; --y)
+	for(size_t y = height - 1; y >= 0; --y)
 	{
 		unsigned char *line = output + bpl * y;
 
@@ -250,7 +250,7 @@ bool SaveBitmap8(const char *filename, int width, int height, int bpl, unsigned 
 	return true;
 }
 
-bool SaveBitmap(const char *filename, int width, int height, int bpl, unsigned char *output)
+bool SaveBitmap(const char *filename, size_t width, size_t height, size_t bpl, unsigned char *output)
 {
 	int depth = (bpl / width) * 8;
 	switch(depth)

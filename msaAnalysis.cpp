@@ -27,8 +27,24 @@ inline size_t MAX3(size_t x, size_t y, size_t z)
 	return z;
 }
 
-// temporary, for debugging
-bool SavePNG(const char *filename, msaImage &img);
+bool msaObject::AddObjectToImage(msaImage &img, const msaPixel &foreground)
+{
+	if(img.Width() < x + width) return false;
+	if(img.Height() < y + height) return false;
+
+	// for each scanline in map of runs, set all pixels in run to foreground color
+	for(size_t line_y = y; line_y < y + height; ++line_y)
+	{
+		for(std::pair<size_t, size_t> &p : runs[line_y])
+		{
+			for(size_t run_x = p.first; run_x < p.first + p.second; ++run_x)
+			{
+				img.SetPixel(run_x, line_y, foreground);
+			}
+		}
+	}
+	return true;
+}
 
 bool msaObject::DoesRunIntersect(size_t run_y, size_t run_x, size_t run_len, bool addRun)
 {
@@ -39,33 +55,38 @@ bool msaObject::DoesRunIntersect(size_t run_y, size_t run_x, size_t run_len, boo
 	if(run_x > x + width + 1) return false;
 	if(run_x + run_len < x - 1) return false;
 
-	// see if there are any runs adjacent to the run_y
-	if(runs[run_y].size() == 0 && runs[run_y - 1].size() == 0 &&
-					runs[run_y + 1].size() == 0) return false;
+	// see if there are any runs adjacent to the run_y; if not, exit
+	if(runs[run_y - 1].size() == 0 && runs[run_y + 1].size() == 0) 
+			return false;
 
-	// The run does touch the bounding box, does it touch a run?  Look at 
-	//  runs before and after for overlap, and on line for adjacency.  Start
-	//  looking at line above, since we'll be adding runs to objects going
-	//  top-down.
-	bool overlap = true;
-	// object run goes from p.first to p.first + p.second
-	for(std::pair<size_t, size_t> &p : runs[run_y])
-	{
-		// check for adjacency
-		if(run_x >= p.first + p.second) overlap = false;
-		if(run_x + run_len <= p.first) overlap = false;
-	}
-	for(std::pair<size_t, size_t> &p : runs[run_y - 1])
-	{
-		// check for overlap
-		if(run_x > p.first + p.second) overlap = false;
-		if(run_x + run_len < p.first) overlap = false;
-	}
+	// The run does touch the bounding box, and there is a run on or adjacent to run_y
+	// The nature of runlength encoding means runs will not abut horizontally (because
+	// then they wouldn't be separate runs).  Check the line above and the line below
+	// for 4-way connections (directly above or below, not diagonal).
+	bool overlap = false;
 	for(std::pair<size_t, size_t> &p : runs[run_y + 1])
 	{
-		// check for overlap
-		if(run_x > p.first + p.second) overlap = false;
-		if(run_x + run_len < p.first) overlap = false;
+		// if runs overlap, then the start of one run will fall within the range of the other
+		// try both ways
+		// do a [left, right) comparison
+		if((run_x >= p.first && run_x < p.first + p.second) ||
+			(p.first >= run_x && p.first < run_x + run_len))
+		{
+			overlap = true;
+			break;
+		}
+	}
+	if(!overlap)
+	{
+		for(std::pair<size_t, size_t> &p : runs[run_y - 1])
+		{
+			if((run_x >= p.first && run_x < p.first + p.second) ||
+				(p.first >= run_x && p.first < run_x + run_len))
+			{
+				overlap = true;
+				break;
+			}
+		}
 	}
 			
 	// make sure the run doesn't already exist
@@ -167,7 +188,7 @@ void msaAnalysis::GenerateProjection(msaImage &input, bool vertical,
 		projection.resize(width);
 		for(int y = height - 1; y >= 0; --y)
 		{
-			unsigned char *byte = input.GetLine(y);
+			unsigned char *byte = input.GetRawLine(y);
 			for(int x = bytesWide - 1; x >= 0; --x)
 			{
 				// sum up r + g + b + a
@@ -180,7 +201,7 @@ void msaAnalysis::GenerateProjection(msaImage &input, bool vertical,
 		projection.resize(height);
 		for(int y = height - 1; y >= 0; --y)
 		{
-			unsigned char *byte = input.GetLine(y);
+			unsigned char *byte = input.GetRawLine(y);
 			for(int x = bytesWide - 1; x >= 0; --x)
 			{
 				// sum up r + g + b + a
@@ -207,7 +228,7 @@ void msaAnalysis::RunlengthEncodeImage(msaImage &img, std::vector< std::list<siz
 	runs.resize(img.Height());
 	for(int y = 0; y < img.Height(); ++y)
 	{
-		unsigned char *scanline = img.GetLine(y);
+		unsigned char *scanline = img.GetRawLine(y);
 		int last = 0;
 		int x = 0;
 		// set up first run (may end up being zero length)
@@ -267,7 +288,7 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 				continue;
 			}
 
-			printf("Run %li, %li to %li  ", y, x, len);
+			printf("Run %li, %li to %li  ", y, x, x + len);
 			// count number of objects a run intersects
 			int hits = 0;
 			// pointer to the last object hit by a run

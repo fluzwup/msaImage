@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <memory.h>
+#include <string>
 
 #include "msaImage.h"
 #include "ColorspaceConversion.h"
@@ -19,8 +20,8 @@ unsigned long GetTickCount()
 	return 1000000 * tv.tv_sec + tv.tv_usec;
 }
 
-bool LoadPNG(const char *filename, int &width, int &height, int &bpl, int &depth, int &dpi, 
-		unsigned char **data)
+bool LoadPNG(const char *filename, size_t &width, size_t &height, size_t &bpl, 
+				size_t &depth, size_t &dpi, unsigned char **data)
 {
 	try
 	{
@@ -56,7 +57,7 @@ bool SaveBitmap(const char *filename, msaImage &img)
 
 int main(int argc, char **argv)
 {
-	int width, height, bpl, depth, dpi;
+	size_t width, height, bpl, depth, dpi;
 	unsigned char *data = NULL;
 
 	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
@@ -78,9 +79,23 @@ int main(int argc, char **argv)
 	analyze.GenerateObjectList(gray, 127, false, objects);
 
 	printf("Found %zu objects\n", objects.size());
+
+	msaPixel bg, fg;
+	bg.r = bg.g = bg.b = 255; bg.a = 255;
+	fg.r = fg.g = fg.b = 0; bg.a = 255;
+
+	msaImage imgObject;
+	imgObject.CreateImage(gray.Width(), gray.Height(), 32, bg);
+
 	for(msaObject &o : objects)
 	{
-		printf("location %5zu, %5zu size %5zu, %5zu\n", o.x, o.y, o.width, o.height);
+		printf("index %zu, location %5zu, %5zu size %5zu, %5zu\n", 
+						o.index, o.x, o.y, o.width, o.height);
+
+		o.AddObjectToImage(imgObject, fg);
+
+		std::string filename = "object" + std::to_string(o.index) + ".png";
+		SavePNG(filename.c_str(), imgObject);
 	}
 
 	delete[] data;

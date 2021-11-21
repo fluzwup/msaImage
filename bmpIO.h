@@ -34,8 +34,8 @@ typedef struct tagRGBQUAD {
 	BYTE rgbReserved;
 } RGBQUAD;
 
-bool LoadBitmap(const char *filename, int &width, int &height, int &bpl, unsigned char **pdata);
-bool SaveBitmap(const char *filename, int width, int height, int bpl, unsigned char *output);
+bool LoadBitmap(const char *filename, size_t &width, size_t &height, size_t &bpl, unsigned char **pdata);
+bool SaveBitmap(const char *filename, size_t width, size_t height, size_t bpl, unsigned char *output);
 
 #pragma pack()
 

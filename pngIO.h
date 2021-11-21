@@ -1,6 +1,6 @@
 
-void ReadPNG(const char *filename, int &width, int &height, int &bpl, int &dpi, int &depth, 
-		unsigned char **data);
-void WritePNG(const char *filename, int width, int height, int bpl, int dpi, int depth, 
-		unsigned char *data);
+void ReadPNG(const char *filename, size_t &width, size_t &height, size_t &bpl, 
+				size_t &dpi, size_t &depth, unsigned char **data);
+void WritePNG(const char *filename, size_t width, size_t height, size_t bpl, 
+				size_t dpi, size_t depth, unsigned char *data);
 

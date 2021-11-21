@@ -46,22 +46,22 @@ bool msaImage::OwnsData()
 	return ownsData;
 }
 
-int msaImage::Width()
+size_t msaImage::Width()
 {
 	return width;
 }
 
-int msaImage::Height()
+size_t msaImage::Height()
 {
 	return height;
 }
 
-int msaImage::Depth()
+size_t msaImage::Depth()
 {
 	return depth;
 }
 
-int msaImage::BytesPerLine()
+size_t msaImage::BytesPerLine()
 {
 	return bytesPerLine;
 }
@@ -71,7 +71,7 @@ unsigned char *msaImage::Data()
 	return data;
 }
 
-void msaImage::UseExternalData(int w, int h, int bpl, int d, unsigned char *pd)
+void msaImage::UseExternalData(size_t w, size_t h, size_t bpl, size_t d, unsigned char *pd)
 {
 	if(ownsData) delete[] data;
 	data = NULL;
@@ -84,7 +84,7 @@ void msaImage::UseExternalData(int w, int h, int bpl, int d, unsigned char *pd)
 	ownsData = false;
 }
 
-void msaImage::TakeExternalData(int w, int h, int bpl, int d, unsigned char *pd)
+void msaImage::TakeExternalData(size_t w, size_t h, size_t bpl, size_t d, unsigned char *pd)
 {
 	if(ownsData) delete[] data;
 	data = NULL;
@@ -97,7 +97,7 @@ void msaImage::TakeExternalData(int w, int h, int bpl, int d, unsigned char *pd)
 	ownsData = true;
 }
 
-void msaImage::SetCopyData(int w, int h, int bpl, int d, unsigned char *pd)
+void msaImage::SetCopyData(size_t w, size_t h, size_t bpl, size_t d, unsigned char *pd)
 {
 	if(ownsData) delete[] data;
 	data = NULL;
@@ -111,13 +111,13 @@ void msaImage::SetCopyData(int w, int h, int bpl, int d, unsigned char *pd)
 	data = new unsigned char[height * bytesPerLine];
 
 	// copy in line by line so we can adjust to bytesPerLine if needed
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		memcpy(&data[y * bytesPerLine], &pd[y * bpl], bpl);
 	}
 }
 
-void msaImage::CreateImage(int w, int h, int d)
+void msaImage::CreateImage(size_t w, size_t h, size_t d)
 {
 	if(ownsData) delete[] data;
 	data = NULL;
@@ -136,7 +136,7 @@ void msaImage::CreateImage(int w, int h, int d)
 	}
 }
 
-void msaImage::CreateImage(int w, int h, int d, const msaPixel &fill)
+void msaImage::CreateImage(size_t w, size_t h, size_t d, const msaPixel &fill)
 {
 	// create uninitialized image
 	CreateImage(w, h, d);
@@ -145,15 +145,15 @@ void msaImage::CreateImage(int w, int h, int d, const msaPixel &fill)
 	switch(d)
 	{
 		case 8:
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				memset(&data[y * bytesPerLine], fill.r, width);
 			}
 			break;
 		case 24:
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					data[y * bytesPerLine + x * 3] = fill.r;
 					data[y * bytesPerLine + x * 3 + 1] = fill.g;
@@ -162,9 +162,9 @@ void msaImage::CreateImage(int w, int h, int d, const msaPixel &fill)
 			}
 			break;
 		case 32:
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					data[y * bytesPerLine + x * 4] = fill.r;
 					data[y * bytesPerLine + x * 4 + 1] = fill.g;
@@ -178,12 +178,12 @@ void msaImage::CreateImage(int w, int h, int d, const msaPixel &fill)
 	}
 }
 
-void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, int quality)
+void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, size_t quality)
 {
 	unsigned char *output;
-	int newW;
-	int newH;
-	int newBPL;
+	size_t newW;
+	size_t newH;
+	size_t newBPL;
 
 	// create output data
 	switch(depth)
@@ -221,16 +221,16 @@ void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, int q
 
 
 // use nearest source pixel, no interpolation
-unsigned char *msaImage::transformFast32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformFast32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = newW * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = newW * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 
 	for(y = 0; y < newH; ++y)
 	{
@@ -240,7 +240,7 @@ unsigned char *msaImage::transformFast32(msaAffineTransform &transform, int &wid
 			double ny = y;
 			transform.InvTransform(nx, ny);
 
-			if(nx < 0 || ny < 0 || (int)nx >= width || (int)ny >= height)
+			if(nx < 0 || ny < 0 || (size_t)nx >= width || (size_t)ny >= height)
 			{
 				output[y * newBPL + x * 4] = transform.oob_r;
 				output[y * newBPL + x * 4 + 1] = transform.oob_g;
@@ -249,7 +249,7 @@ unsigned char *msaImage::transformFast32(msaAffineTransform &transform, int &wid
 			}
 			else
 			{
-				long index = (int)ny * bpl + (int)nx * 4;
+				size_t index = (size_t)ny * bpl + (size_t)nx * 4;
 				output[y * newBPL + x * 4] = input[index++];
 				output[y * newBPL + x * 4 + 1] = input[index++];
 				output[y * newBPL + x * 4 + 2] = input[index++];
@@ -265,16 +265,16 @@ unsigned char *msaImage::transformFast32(msaAffineTransform &transform, int &wid
 	return output;
 }
 
-unsigned char *msaImage::transformFast24(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformFast24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = (newW * 3 + 3) / 4 * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = (newW * 3 + 3) / 4 * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 
 	for(y = 0; y < newH; ++y)
 	{
@@ -284,7 +284,7 @@ unsigned char *msaImage::transformFast24(msaAffineTransform &transform, int &wid
 			double ny = y;
 			transform.InvTransform(nx, ny);
 
-			if(nx < 0 || ny < 0 || (int)nx >= width || (int)ny >= height)
+			if(nx < 0 || ny < 0 || (size_t)nx >= width || (size_t)ny >= height)
 			{
 				output[y * newBPL + x * 3] = transform.oob_r;
 				output[y * newBPL + x * 3 + 1] = transform.oob_g;
@@ -292,7 +292,7 @@ unsigned char *msaImage::transformFast24(msaAffineTransform &transform, int &wid
 			}
 			else
 			{
-				long index = (int)ny * bpl + (int)nx * 3;
+				size_t index = (size_t)ny * bpl + (size_t)nx * 3;
 				output[y * newBPL + x * 3] = input[index++];
 				output[y * newBPL + x * 3 + 1] = input[index++];
 				output[y * newBPL + x * 3 + 2] = input[index];
@@ -307,16 +307,16 @@ unsigned char *msaImage::transformFast24(msaAffineTransform &transform, int &wid
 	return output;
 }
 
-unsigned char *msaImage::transformFast8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformFast8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = (newW + 3) / 4 * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = (newW + 3) / 4 * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 
 	for(y = 0; y < newH; ++y)
 	{
@@ -326,13 +326,13 @@ unsigned char *msaImage::transformFast8(msaAffineTransform &transform, int &widt
 			double ny = y;
 			transform.InvTransform(nx, ny);
 
-			if(nx < 0 || ny < 0 || (int)nx >= width || (int)ny >= height)
+			if(nx < 0 || ny < 0 || (size_t)nx >= width || (size_t)ny >= height)
 			{
 				output[y * newBPL + x] = transform.oob_r;
 			}
 			else
 			{
-				long index = (int)ny * bpl + (int)nx;
+				size_t index = (size_t)ny * bpl + (size_t)nx;
 				output[y * newBPL + x] = input[index++];
 			}
 		}
@@ -396,23 +396,23 @@ const int fastCosInv[] =
 };
 
 // cosine curve for interpolation between two points on each axis
-unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = newW * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = newW * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 	double nx;
 	double ny;
 
 	for(y = 0; y < newH; ++y)
 	{
-		int startX = 0;
-		int endX = newW;
+		size_t startX = 0;
+		size_t endX = newW;
 
 		// start out and zip along until we find a bit that transforms into a valid location
 		//  on the input image
@@ -423,7 +423,7 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, int &w
 
 			transform.InvTransform(nx, ny);
 
-			if(!(nx < 0 || ny < 0 || (int)nx > width - 2 || (int)ny > height - 2))			
+			if(!(nx < 0 || ny < 0 || (size_t)nx > width - 2 || (size_t)ny > height - 2))			
 				break;
 
 			// else fill with overflow
@@ -443,7 +443,7 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, int &w
 			transform.InvTransform(nx, ny);
 
 			// if we're out of bounds, then bail out and finish filling with overflow color
-			if(nx < 0 || ny < 0 || (int)nx > width - 2 || (int)ny > height - 2)
+			if(nx < 0 || ny < 0 || (size_t)nx > width - 2 || (size_t)ny > height - 2)
 				break;
 
 			int wholeX = (int)nx;
@@ -504,23 +504,23 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, int &w
 	return output;
 }
 
-unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = (newW * 3 + 3) / 4 * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = (newW * 3 + 3) / 4 * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 	double nx;
 	double ny;
 
 	for(y = 0; y < newH; ++y)
 	{
-		int startX = 0;
-		int endX = newW;
+		size_t startX = 0;
+		size_t endX = newW;
 
 		// start out and zip along until we find a bit that transforms into a valid location
 		//  on the input image
@@ -531,7 +531,7 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, int &w
 
 			transform.InvTransform(nx, ny);
 
-			if(!(nx < 0 || ny < 0 || (int)nx > width - 2 || (int)ny > height - 2))			
+			if(!(nx < 0 || ny < 0 || (size_t)nx > width - 2 || (size_t)ny > height - 2))			
 				break;
 
 			// else fill with overflow
@@ -550,7 +550,7 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, int &w
 			transform.InvTransform(nx, ny);
 
 			// if we're out of bounds, then bail out and finish filling with overflow color
-			if(nx < 0 || ny < 0 || (int)nx > width - 2 || (int)ny > height - 2)
+			if(nx < 0 || ny < 0 || (size_t)nx > width - 2 || (size_t)ny > height - 2)
 				break;
 
 			int wholeX = (int)nx;
@@ -603,23 +603,23 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, int &w
 	return output;
 }
 
-unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = (newW + 3) / 4 * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = (newW + 3) / 4 * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 	double nx;
 	double ny;
 
 	for(y = 0; y < newH; ++y)
 	{
-		int startX = 0;
-		int endX = newW;
+		size_t startX = 0;
+		size_t endX = newW;
 
 		// start out and zip along until we find a bit that transforms into a valid location
 		//  on the input image
@@ -630,7 +630,7 @@ unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, int &wi
 
 			transform.InvTransform(nx, ny);
 
-			if(!(nx < 0 || ny < 0 || (int)nx > width - 2 || (int)ny > height - 2))			
+			if(!(nx < 0 || ny < 0 || (size_t)nx > width - 2 || (size_t)ny > height - 2))			
 				break;
 
 			// else fill with overflow
@@ -647,7 +647,7 @@ unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, int &wi
 			transform.InvTransform(nx, ny);
 
 			// if we're out of bounds, then bail out and finish filling with overflow color
-			if(nx < 0 || ny < 0 || (int)nx > width - 2 || (int)ny > height - 2)
+			if(nx < 0 || ny < 0 || (size_t)nx > width - 2 || (size_t)ny > height - 2)
 				break;
 
 			int wholeX = (int)nx;
@@ -763,23 +763,23 @@ int bcint4[] =
 };
 
 // bicubic interpolation between four points along each axis
-unsigned char *msaImage::transformBest32(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = newW * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = newW * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 	double nx;
 	double ny;
 
 	for(y = 0; y < newH; ++y)
 	{
-		int startX = 0;
-		int endX = newW;
+		size_t startX = 0;
+		size_t endX = newW;
 
 		// start out and zip along until we find a bit that transforms into a valid location
 		//  on the input image
@@ -790,7 +790,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, int &wid
 
 			transform.InvTransform(nx, ny);
 
-			if(!(nx < 1 || ny < 1 || (int)nx >= width - 2 || (int)ny >= height - 2))
+			if(!(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2))
 				break;
 
 			// else fill with overflow
@@ -809,7 +809,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, int &wid
 			ny = y;
 			transform.InvTransform(nx, ny);
 
-			if(nx < 1 || ny < 1 || (int)nx >= width - 2 || (int)ny >= height - 2)
+			if(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2)
 				break;
 
 			int wholeX = (int)nx;
@@ -965,23 +965,23 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, int &wid
 }
 
 // bicubic interpolation between four points along each axis
-unsigned char *msaImage::transformBest24(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = (newW * 3 + 3) / 4 * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = (newW * 3 + 3) / 4 * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 	double nx;
 	double ny;
 
 	for(y = 0; y < newH; ++y)
 	{
-		int startX = 0;
-		int endX = newW;
+		size_t startX = 0;
+		size_t endX = newW;
 
 		// start out and zip along until we find a bit that transforms into a valid location
 		//  on the input image
@@ -992,7 +992,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, int &wid
 
 			transform.InvTransform(nx, ny);
 
-			if(!(nx < 1 || ny < 1 || (int)nx >= width - 2 || (int)ny >= height - 2))
+			if(!(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2))
 				break;
 
 			// else fill with overflow
@@ -1010,7 +1010,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, int &wid
 			ny = y;
 			transform.InvTransform(nx, ny);
 
-			if(nx < 1 || ny < 1 || (int)nx >= width - 2 || (int)ny >= height - 2)
+			if(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2)
 				break;
 
 			int wholeX = (int)nx;
@@ -1128,23 +1128,23 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, int &wid
 }
 
 // bicubic interpolation between four points along each axis
-unsigned char *msaImage::transformBest8(msaAffineTransform &transform, int &width, int &height, int &bpl, unsigned char *input)
+unsigned char *msaImage::transformBest8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
 {
-	int newH = height;
-	int newW = width;
-	int newBPL = (newW + 3) / 4 * 4;
+	size_t newH = height;
+	size_t newW = width;
+	size_t newBPL = (newW + 3) / 4 * 4;
 
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
-	int x, y;
+	size_t x, y;
 	double nx;
 	double ny;
 
 	for(y = 0; y < newH; ++y)
 	{
-		int startX = 0;
-		int endX = newW;
+		size_t startX = 0;
+		size_t endX = newW;
 
 		// start out and zip along until we find a bit that transforms into a valid location
 		//  on the input image
@@ -1155,7 +1155,7 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, int &widt
 
 			transform.InvTransform(nx, ny);
 
-			if(!(nx < 1 || ny < 1 || (int)nx >= width - 2 || (int)ny >= height - 2))
+			if(!(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2))
 				break;
 
 			// else fill with overflow
@@ -1171,7 +1171,7 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, int &widt
 			ny = y;
 			transform.InvTransform(nx, ny);
 
-			if(nx < 1 || ny < 1 || (int)nx >= width - 2 || (int)ny >= height - 2)
+			if(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2)
 				break;
 
 			int wholeX = (int)nx;
@@ -1234,7 +1234,7 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, int &widt
 	return output;
 }
 
-void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
+void msaImage::SimpleConvert(size_t newDepth, msaPixel &color, msaImage &outputref)
 {
 	msaImage output;
 
@@ -1252,11 +1252,11 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 	{
 		if(depth == 24)
 		{
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
 				unsigned char *inLine = &data[y * bytesPerLine];
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					// multiply RGB values times color values to get relative brightness
 					*outLine++ = RGBtoGray(inLine[0], inLine[1], inLine[2]);
@@ -1266,11 +1266,11 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 		}
 		else // depth == 32
 		{
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
 				unsigned char *inLine = &data[y * bytesPerLine];
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					// multiply RGB values times color values to get relative brightness
 					*outLine++ = RGBtoGray(inLine[0], inLine[1], inLine[2]);
@@ -1283,14 +1283,14 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 	{
 		if(depth == 8)
 		{
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
 				unsigned char *inLine = &data[y * bytesPerLine];
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					// assume color corresponds to white, scale between that and black
-					int grey = *inLine++;
+					size_t grey = *inLine++;
 					*outLine++ = (unsigned char)(grey * color.r) / 255;
 					*outLine++ = (unsigned char)(grey * color.g) / 255;
 					*outLine++ = (unsigned char)(grey * color.b) / 255;
@@ -1299,11 +1299,11 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 		}
 		else // depth == 32
 		{
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
 				unsigned char *inLine = &data[y * bytesPerLine];
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					// copy r, g, b, drop alpha
 					*outLine++ = *inLine++;
@@ -1318,14 +1318,14 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 	{
 		if(depth == 8)
 		{
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
 				unsigned char *inLine = &data[y * bytesPerLine];
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					// assume color corresponds to white, scale between that and black
-					int grey = *inLine++;
+					size_t grey = *inLine++;
 					*outLine++ = (unsigned char)(grey * color.r) / 255;
 					*outLine++ = (unsigned char)(grey * color.g) / 255;
 					*outLine++ = (unsigned char)(grey * color.b) / 255;
@@ -1337,11 +1337,11 @@ void msaImage::SimpleConvert(int newDepth, msaPixel &color, msaImage &outputref)
 		}
 		else // depth == 24
 		{
-			for(int y = 0; y < height; ++y)
+			for(size_t y = 0; y < height; ++y)
 			{
 				unsigned char *outLine = &(output.Data())[y * output.BytesPerLine()];
 				unsigned char *inLine = &data[y * bytesPerLine];
-				for(int x = 0; x < width; ++x)
+				for(size_t x = 0; x < width; ++x)
 				{
 					// copy r, g, b, add in alpha
 					*outLine++ = *inLine++;
@@ -1367,10 +1367,10 @@ void msaImage::ColorMap(msaPixel map[256], msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, 24);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *line = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			msaPixel &pixel = map[data[y * bytesPerLine + x]];
 			*line++ = pixel.r;
@@ -1389,10 +1389,10 @@ void msaImage::RemapBrightness(unsigned char map[256], msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, 8);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *line = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			*line++ = map[data[y * bytesPerLine + x]];
 		}
@@ -1411,12 +1411,12 @@ void msaImage::AddAlphaChannel(msaImage &alpha, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, 32);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *inLine = &data[y * bytesPerLine];
 		unsigned char *outLine = &output.Data()[y * output.BytesPerLine()];
 		unsigned char *alphaLine = &alpha.Data()[y * alpha.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			*outLine++ = *inLine++;     // r
 			*outLine++ = *inLine++;     // g
@@ -1432,8 +1432,8 @@ void msaImage::ComposeRGB(msaImage &red, msaImage &green, msaImage &blue)
 	if(red.Depth() != 8 || green.Depth() != 8 || blue.Depth() != 8)
 		throw "All composite inputs must be an 8 bit images.";
 
-	int width = red.Width();
-	int height = red.Height();
+	size_t width = red.Width();
+	size_t height = red.Height();
 
 	if(green.Width() != width || blue.Width() != width ||
 			green.Height() != height || blue.Height() != height)
@@ -1442,13 +1442,13 @@ void msaImage::ComposeRGB(msaImage &red, msaImage &green, msaImage &blue)
 	// set up this image as output image
 	CreateImage(width, height, 24);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
 		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
 		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
 		unsigned char *outLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			*outLine++ = *rLine++;
 			*outLine++ = *gLine++;
@@ -1462,8 +1462,8 @@ void msaImage::ComposeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaIm
 	if(red.Depth() != 8 || green.Depth() != 8 || blue.Depth() != 8 || alpha.Depth() != 8)
 		throw "All composite inputs must be an 8 bit images.";
 
-	int width = red.Width();
-	int height = red.Height();
+	size_t width = red.Width();
+	size_t height = red.Height();
 
 	if(green.Width() != width || blue.Width() != width || green.Height() != height || blue.Height() != height 
 			|| alpha.Width() != width || alpha.Height() != height)
@@ -1472,14 +1472,14 @@ void msaImage::ComposeRGBA(msaImage &red, msaImage &green, msaImage &blue, msaIm
 	// set up this image as output image
 	CreateImage(width, height, 32);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
 		unsigned char *gLine = &green.Data()[y * blue.BytesPerLine()];
 		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
 		unsigned char *aLine = &alpha.Data()[y * alpha.BytesPerLine()];
 		unsigned char *outLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			*outLine++ = *rLine++;
 			*outLine++ = *gLine++;
@@ -1500,13 +1500,13 @@ void msaImage::SplitRGB(msaImage &red, msaImage &green, msaImage &blue)
 	green.CreateImage(width, height, 8);
 	blue.CreateImage(width, height, 8);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
 		unsigned char *gLine = &green.Data()[y * green.BytesPerLine()];
 		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
 		unsigned char *rgbLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			*rLine++ = *rgbLine++;
 			*gLine++ = *rgbLine++;
@@ -1526,14 +1526,14 @@ void msaImage::SplitRGBA(msaImage &red, msaImage &green, msaImage &blue, msaImag
 	blue.CreateImage(width, height, 8);
 	alpha.CreateImage(width, height, 8);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *rLine = &red.Data()[y * red.BytesPerLine()];
 		unsigned char *gLine = &green.Data()[y * green.BytesPerLine()];
 		unsigned char *bLine = &blue.Data()[y * blue.BytesPerLine()];
 		unsigned char *aLine = &alpha.Data()[y * alpha.BytesPerLine()];
 		unsigned char *rgbaLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			*rLine++ = *rgbaLine++;
 			*gLine++ = *rgbaLine++;
@@ -1548,8 +1548,8 @@ void msaImage::ComposeHSV(msaImage &hue, msaImage &sat, msaImage &vol)
 	if(hue.Depth() != 8 || sat.Depth() != 8 || vol.Depth() != 8)
 		throw "All composite inputs must be an 8 bit images.";
 
-	int width = hue.Width();
-	int height = hue.Height();
+	size_t width = hue.Width();
+	size_t height = hue.Height();
 
 	if(sat.Width() != width || vol.Width() != width ||
 			sat.Height() != height || vol.Height() != height)
@@ -1558,13 +1558,13 @@ void msaImage::ComposeHSV(msaImage &hue, msaImage &sat, msaImage &vol)
 	// set up this image as output image
 	CreateImage(width, height, 24);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
 		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
 		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
 		unsigned char *rgbLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			// grab references to all the values we need for the conversion
 			unsigned char &r = *rgbLine++;
@@ -1585,8 +1585,8 @@ void msaImage::ComposeHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage
 	if(hue.Depth() != 8 || sat.Depth() != 8 || vol.Depth() != 8 || alpha.Depth() != 8)
 		throw "All composite inputs must be an 8 bit images.";
 
-	int width = hue.Width();
-	int height = hue.Height();
+	size_t width = hue.Width();
+	size_t height = hue.Height();
 
 	if(sat.Width() != width || vol.Width() != width || sat.Height() != height || 
 			vol.Height() != height || alpha.Height() != height)
@@ -1595,14 +1595,14 @@ void msaImage::ComposeHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage
 	// set up this image as output image
 	CreateImage(width, height, 32);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
 		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
 		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
 		unsigned char *aLine = &alpha.Data()[y * alpha.BytesPerLine()];
 		unsigned char *rgbaLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			// grab references to all the values we need for the conversion
 			unsigned char &r = *rgbaLine++;
@@ -1630,13 +1630,13 @@ void msaImage::SplitHSV(msaImage &hue, msaImage &sat, msaImage &vol)
 	sat.CreateImage(width, height, 8);
 	vol.CreateImage(width, height, 8);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
 		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
 		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
 		unsigned char *rgbLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			// grab references to all the values we need for the conversion
 			unsigned char &r = *rgbLine++;
@@ -1663,14 +1663,14 @@ void msaImage::SplitHSVA(msaImage &hue, msaImage &sat, msaImage &vol, msaImage &
 	vol.CreateImage(width, height, 8);
 	alpha.CreateImage(width, height, 8);
 	
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *hLine = &hue.Data()[y * hue.BytesPerLine()];
 		unsigned char *sLine = &sat.Data()[y * sat.BytesPerLine()];
 		unsigned char *vLine = &vol.Data()[y * vol.BytesPerLine()];
 		unsigned char *aLine = &alpha.Data()[y * vol.BytesPerLine()];
 		unsigned char *rgbaLine = &data[y * bytesPerLine];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			// grab references to all the values we need for the conversion
 			unsigned char &r = *rgbaLine++;
@@ -1697,12 +1697,12 @@ void msaImage::MinImages(msaImage &input, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, depth);
 
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			unsigned char c1 = *in1++;
 			unsigned char c2 = *in2++;
@@ -1721,12 +1721,12 @@ void msaImage::MaxImages(msaImage &input, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, depth);
 
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			unsigned char c1 = *in1++;
 			unsigned char c2 = *in2++;
@@ -1745,12 +1745,12 @@ void msaImage::SumImages(msaImage &input, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, depth);
 
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			int sum = *in1++ + *in2++;
 			*out++ = (unsigned char)sum / 2;
@@ -1768,12 +1768,12 @@ void msaImage::DiffImages(msaImage &input, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, depth);
 
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			int diff = *in1++ - *in2++;
 			*out++ = (unsigned char)(127 + diff / 2);
@@ -1791,12 +1791,12 @@ void msaImage::MultiplyImages(msaImage &input, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, depth);
 
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			int m = *in1++ * *in2++;
 			*out++ = (unsigned char)(m / 256);
@@ -1814,12 +1814,12 @@ void msaImage::DivideImages(msaImage &input, msaImage &outputref)
 	msaImage output;
 	output.CreateImage(width, height, depth);
 
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 	{
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(int x = 0; x < width; ++x)
+		for(size_t x = 0; x < width; ++x)
 		{
 			// add one to divisor to avoid divide by zero
 			int d = *in1++ * 256 / (1 + *in2++);
@@ -1829,7 +1829,7 @@ void msaImage::DivideImages(msaImage &input, msaImage &outputref)
 	outputref.MoveData(output);
 }
 
-void msaImage::OverlayImage(msaImage &overlay, int destx, int desty, int w, int h)
+void msaImage::OverlayImage(msaImage &overlay, size_t destx, size_t desty, size_t w, size_t h)
 {
 	if(depth != overlay.Depth())
 		throw "Overlay image must match depth of base image";
@@ -1845,19 +1845,19 @@ void msaImage::OverlayImage(msaImage &overlay, int destx, int desty, int w, int 
 	// for 8 and 24 bit, just copy the data from the overlay image into the destination rectangle
 	if(depth == 8)
 	{
-		for(int y = 0; y < h; ++y)
+		for(size_t y = 0; y < h; ++y)
 			memcpy(&data[(desty + y) * bytesPerLine + destx], &overlay.Data()[y * overlay.BytesPerLine()], w); 
 	}
 	else if(depth == 24)
 	{
-		for(int y = 0; y < h; ++y)
+		for(size_t y = 0; y < h; ++y)
 			memcpy(&data[(desty + y) * bytesPerLine + destx * 3], &overlay.Data()[y * overlay.BytesPerLine()], w * 3); 
 	}
 	else if(depth == 32)
 	{
-		for(int y = 0; y < h; ++y)
+		for(size_t y = 0; y < h; ++y)
 		{
-			for(int x = 0; x < w; ++x)
+			for(size_t x = 0; x < w; ++x)
 			{
 				// grab data from overlay and base
 				unsigned char &r1 = data[(desty + y) * bytesPerLine + (destx + x) * 4];
@@ -1883,7 +1883,7 @@ void msaImage::OverlayImage(msaImage &overlay, int destx, int desty, int w, int 
 	}
 }
 
-void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int desty, int w, int h)
+void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, size_t destx, size_t desty, size_t w, size_t h)
 {
 	if(depth != overlay.Depth())
 		throw "Overlay image must match depth of base image";
@@ -1893,9 +1893,9 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 		if(mask.Depth() != 8)
 			throw "Mask must be 8 bit depth";
 
-		for(int y = 0; y < h; ++y)
+		for(size_t y = 0; y < h; ++y)
 		{
-			for(int x = 0; x < w; ++x)
+			for(size_t x = 0; x < w; ++x)
 			{
 				// grab data from overlay, base, and mask
 				unsigned char &g1 = data[(desty + y) * bytesPerLine + (destx + x)];
@@ -1912,9 +1912,9 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 	}
 	else if(depth == 24)
 	{
-		for(int y = 0; y < h; ++y)
+		for(size_t y = 0; y < h; ++y)
 		{
-			for(int x = 0; x < w; ++x)
+			for(size_t x = 0; x < w; ++x)
 			{
 				// grab data from overlay and base
 				unsigned char &r1 = data[(desty + y) * bytesPerLine + (destx + x) * 3];
@@ -1959,9 +1959,9 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 	}
 	else if(depth == 32)
 	{
-		for(int y = 0; y < h; ++y)
+		for(size_t y = 0; y < h; ++y)
 		{
-			for(int x = 0; x < w; ++x)
+			for(size_t x = 0; x < w; ++x)
 			{
 				// grab data from overlay and base
 				unsigned char &r1 = data[(desty + y) * bytesPerLine + (destx + x) * 4];
@@ -2006,32 +2006,64 @@ void msaImage::OverlayImage(msaImage &overlay, msaImage &mask, int destx, int de
 	}
 }
 
-void msaImage::CreateImageFromRuns(std::vector< std::list <size_t> > &runs, int bg, int fg)
+void msaImage::CreateImageFromRuns(std::vector< std::list <size_t> > &runs, size_t depth, msaPixel bg, msaPixel fg)
 {
 	// calculate width by adding up runs in first scanline
 	size_t width = 0;
 	for(size_t len : runs[0])
 		width += len;
 
-	CreateImage(width, runs.size(), 8);
-	for(int y = 0; y < runs.size(); ++y)
+	// gray is fast, we can use memset
+	if(depth == 8)
 	{
-		// each set of runs starts with background
-		unsigned char color = bg;
-		unsigned char *scanline = GetLine(y);
-		int x = 0;
-		for(size_t len : runs[y])
+		CreateImage(width, runs.size(), 8);
+		for(size_t y = 0; y < runs.size(); ++y)
 		{
-			if(len > 0)
-				memset(scanline + x, color, len);
-			
-			// swap colors
-			if(color == bg) 
-					color = fg;
-			else
-					color = bg;
-			x += len;
+			// each set of runs starts with background
+			unsigned char color = bg.r;
+			unsigned char *scanline = GetRawLine(y);
+			size_t x = 0;
+			for(size_t len : runs[y])
+			{
+				if(len > 0)
+					memset(scanline + x, color, len);
+				
+				// swap colors
+				if(color == bg.r) 
+						color = fg.r;
+				else
+						color = bg.r;
+				x += len;
+			}
 		}
 	}
+	else if(depth == 24 || depth == 32)
+	{
+		CreateImage(width, runs.size(), depth);
+		for(size_t y = 0; y < runs.size(); ++y)
+		{
+			// each set of runs starts with background
+			msaPixel color = bg;
+			size_t x = 0;
+			for(size_t len : runs[y])
+			{
+				// set each pixel
+				while(len > 0)
+				{
+					SetPixel(x++, y, color);
+					--len;
+				}
+				
+				// swap colors
+				if(color == bg) 
+						color = fg;
+				else
+						color = bg;
+				x += len;
+			}
+		}
+	}
+	else
+		throw "Invalid depth";
 }
 

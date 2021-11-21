@@ -23,6 +23,9 @@ public:
 	bool DoesRunIntersect(size_t y, size_t x, size_t len, bool addRun = false);
 	// returns false if objects cannot be merged
 	bool MergeObject(msaObject &otherObj);
+
+	// assume img is already extant, and runs will be overlayed in foreground color
+	bool AddObjectToImage(msaImage &img, const msaPixel &foreground);
 };
 
 class msaAnalysis

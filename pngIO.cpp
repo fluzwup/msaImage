@@ -2,8 +2,8 @@
 #include <cstdio>
 #include <png.h>
 
-void WritePNG(const char *filename, int width, int height, int bpl, 
-	int dpi, int depth, unsigned char *data) 
+void WritePNG(const char *filename, size_t width, size_t height, size_t bpl, 
+	size_t dpi, size_t depth, unsigned char *data) 
 {
 	int png_type;
 
@@ -47,7 +47,7 @@ void WritePNG(const char *filename, int width, int height, int bpl,
 
 	// set up array of png_bytep pointing to the first byte of each scanline
 	png_bytep *row_pointers = new png_bytep[height];
-	for(int y = 0; y < height; ++y)
+	for(size_t y = 0; y < height; ++y)
 		row_pointers[y] = (png_bytep)&data[y * bpl];
 
 	png_write_image(png, row_pointers);
@@ -61,8 +61,8 @@ void WritePNG(const char *filename, int width, int height, int bpl,
 	png_destroy_write_struct(&png, &info);
 }
 
-void ReadPNG(const char *filename, int &width, int &height, int &bpl, 
-		int &dpi, int &depth, unsigned char **data) 
+void ReadPNG(const char *filename, size_t &width, size_t &height, size_t &bpl, 
+		size_t &dpi, size_t &depth, unsigned char **data) 
 {
   FILE *fp = fopen(filename, "rb");
 
@@ -118,7 +118,7 @@ void ReadPNG(const char *filename, int &width, int &height, int &bpl,
   *data = new unsigned char[bpl * height];
 
   png_bytep *row_pointers = new png_bytep[sizeof(png_bytep) * height];
-  for(int y = 0; y < height; y++) 
+  for(size_t y = 0; y < height; y++) 
     row_pointers[y] = &(*data)[y * bpl];
 
   png_read_image(png, row_pointers);
