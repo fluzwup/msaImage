@@ -30,6 +30,106 @@ inline size_t MAX3(size_t x, size_t y, size_t z)
 // temporary, for debugging
 bool SavePNG(const char *filename, msaImage &img);
 
+bool msaObject::DoesRunIntersect(size_t run_y, size_t run_x, size_t run_len, bool addRun)
+{
+	// bail if the run doesn't touch the bounding box
+	if(run_y < y - 1) return false;
+	if(run_y > y + height + 1) return false;
+
+	if(run_x > x + width + 1) return false;
+	if(run_x + run_len < x - 1) return false;
+
+	// see if there are any runs adjacent to the run_y
+	if(runs[run_y].size() == 0 && runs[run_y - 1].size() == 0 &&
+					runs[run_y + 1].size() == 0) return false;
+
+	// The run does touch the bounding box, does it touch a run?  Look at 
+	//  runs before and after for overlap, and on line for adjacency.  Start
+	//  looking at line above, since we'll be adding runs to objects going
+	//  top-down.
+	bool overlap = true;
+	// object run goes from p.first to p.first + p.second
+	for(std::pair<size_t, size_t> &p : runs[run_y])
+	{
+		// check for adjacency
+		if(run_x >= p.first + p.second) overlap = false;
+		if(run_x + run_len <= p.first) overlap = false;
+	}
+	for(std::pair<size_t, size_t> &p : runs[run_y - 1])
+	{
+		// check for overlap
+		if(run_x > p.first + p.second) overlap = false;
+		if(run_x + run_len < p.first) overlap = false;
+	}
+	for(std::pair<size_t, size_t> &p : runs[run_y + 1])
+	{
+		// check for overlap
+		if(run_x > p.first + p.second) overlap = false;
+		if(run_x + run_len < p.first) overlap = false;
+	}
+			
+	// make sure the run doesn't already exist
+	if(overlap && addRun)
+	{
+		bool exists = false;
+		for(std::pair<size_t, size_t> &p : runs[run_y])
+		{
+			if(p.first == run_x && p.second == run_len)
+			{
+				exists = true;
+				break;
+			}
+		}
+		if(!exists)
+		{
+			runs[run_y].push_back(std::pair<size_t, size_t>(run_x, run_len));
+
+			// now update bounding box
+			if(run_y < y)
+			{
+				height = (y + height) - run_y;
+				y = run_y;
+			}
+			else if(run_y > y + height)
+			{
+				height = run_y - y;
+			}
+		}
+	}
+	
+	return overlap;
+}
+
+bool msaObject::MergeObject(msaObject &otherObj)
+{
+	// TODO:  add validity check:  make sure bounding boxes touch or overlap
+	
+	// find new bounding box
+	size_t new_left = MIN(x, otherObj.x);
+	size_t new_top = MIN(y, otherObj.y);
+	size_t new_right = MAX(x + width, otherObj.x + otherObj.width); 
+	size_t new_bottom = MAX(y + height, otherObj.y + otherObj.height);
+
+	x = new_left;
+	y = new_top;
+	width = new_right - new_left;
+	height = new_bottom - new_top;
+
+	// copy over runs
+	for(size_t line = y; line < y + height; ++line)
+		for(std::pair<size_t, size_t> &p : otherObj.runs[line])
+			runs[line].push_back(p);
+
+	// blank out otherObj
+	otherObj.x = 0;
+	otherObj.y = 0;
+	otherObj.width = 0;
+	otherObj.height = 0;
+	otherObj.runs.clear();
+
+	return true;
+}
+
 void msaAnalysis::FindEdges(msaImage &input, msaImage &edgemap)
 {
 	if(input.Depth() > 8)
@@ -159,103 +259,56 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 		// go through runs and compare each run with each object
 		for(size_t len : runs[y])
 		{
-			if(!bg)
+			if(bg)
 			{
-				printf("Run %li, %li to %li  ", y, x, len);
-				// count number of objects a run intersects
-				int hits = 0;
-				// pointer to the last object hit by a run
-				msaObject *lastObj = NULL;
-				for(msaObject &obj : newObjects)
-				{
-					// if a run intersects an open object, add the run to that object
-					// run goes from x to x + len
-					if((x + len < obj.x) || (x > obj.x + obj.width)) continue;
+				// swap color, update x
+				bg = !bg;
+				x += len;
+				continue;
+			}
 
-					// we overlay the bounding box, look at the last runs in the object
-					std::vector<std::pair<size_t, size_t> > &bottom_runs = obj.runs[y - 1];
-					for(std::pair<size_t, size_t> &obj_run : bottom_runs)
-					{
-						// object run goes from obj_run. first to +obj_run.second
-						// candidate run goes from x to x + len
-						if((obj_run.first < x + len) || (obj_run.first + obj_run.second > x))
-						{
-							// if this is the first run for this line in this object, 
-							if(hits == 0)
-							{
-								// expand the bounding box if needed
-								obj.height = y - obj.y + 1;
-								// add run
-								obj.runs[y].push_back(std::pair<size_t, size_t>(x, len));
-	
-								// keep a pointer handy for additional hits
-								lastObj = &obj;
-
-								printf("Expanded object %li to location %li, %li size %li, %li run count %li\n",
-									obj.index, obj.x, obj.y, obj.width, obj.height);
-							}
-							// see if this is a second or later hit on an object;
-							if(++hits > 1)
-							{
-								// if it's the second hit on the same object, then just add the run
-								if(lastObj == &obj)
-								{
-									obj.runs[y].push_back(std::pair<size_t, size_t>(x, len));
-									printf("Added run to object %li,  run count %li\n",
-										obj.index, obj.runs[y].size());
-								}
-								// if it's a hit on a different object, then merge
-								else if(lastObj->width > 0)		
-								{
-									// find new bounding box
-									size_t new_left = MIN3(obj.x, lastObj->x, obj_run.first);
-									size_t new_top = MIN(obj.y, lastObj->y);
-									size_t new_right = MAX3(obj.x + obj.width, lastObj->x + lastObj->width, 
-													obj_run.first + obj_run.second);
-									size_t new_bottom = MAX(obj.y + obj.height, lastObj->y + lastObj->height);
-
-									obj.x = new_left;
-									obj.y = new_top;
-									obj.width = new_right - new_left;
-									obj.height = new_bottom - new_top;
-		
-									// add all the runs from lastObj to obj
-									for(size_t run_y = lastObj->y; run_y <= lastObj->y + lastObj->height; ++run_y)
-										for(std::pair<size_t, size_t> a_run : lastObj->runs[run_y])
-												obj.runs[run_y].push_back(a_run);
-		
-									// now zero out lastObj
-									lastObj->x = 0;
-									lastObj->y = 0;
-									lastObj->width = 0;
-									lastObj->height = 0;
-									lastObj->runs.clear();
-
-									printf("Zeroed object %li, expanded object %li to location %li, %li size %li, %li\n",
-										lastObj->index, obj.index, obj.x, obj.y, obj.width, obj.height);
-
-									// current object now becomes lastObj
-									lastObj = &obj;
-								}
-							}
-						}
-					}
-				}
-				// if a run does not intersect any open object, create a new object with that run
+			printf("Run %li, %li to %li  ", y, x, len);
+			// count number of objects a run intersects
+			int hits = 0;
+			// pointer to the last object hit by a run
+			msaObject *lastObj = NULL;
+			for(msaObject &obj : newObjects)
+			{
 				if(hits == 0)
 				{
-					msaObject newObj;
-					newObj.x = x;
-					newObj.y = y;
-					newObj.width = len;
-					newObj.height = 1;
-					newObj.runs[y].push_back(std::pair<size_t, size_t>(x, len)); 	// initial run
-					newObj.index = newObjects.size();
-					newObjects.push_back(newObj);
-
-					printf("Created new object %li, location %li, %li size %li, %li\n",
-						newObj.index, newObj.x, newObj.y, newObj.width, newObj.height);
+					// do add intersecting runs for first hits
+					if(obj.DoesRunIntersect(y, x, len, true))
+					{
+						++hits;
+						printf("First hit, object %li new height %li\n", obj.index, obj.height);
+						lastObj = &obj;
+					}
 				}
+				else
+				{
+					if(obj.DoesRunIntersect(y, x, len, false))
+					{
+						++hits;
+						printf("Hit %i, object %li merging into %li\n", 
+										hits, obj.index, lastObj->index);
+						lastObj->MergeObject(obj);
+					}
+				}
+			}
+			// if a run does not intersect any open object, create a new object with that run
+			if(hits == 0)
+			{
+				msaObject newObj;
+				newObj.x = x;
+				newObj.y = y;
+				newObj.width = len;
+				newObj.height = 1;
+				newObj.runs[y].push_back(std::pair<size_t, size_t>(x, len)); 	// initial run
+				newObj.index = newObjects.size();
+				newObjects.push_back(newObj);
+
+				printf("Created new object %li, location %li, %li size %li, %li\n",
+					newObj.index, newObj.x, newObj.y, newObj.width, newObj.height);
 			}
 
 			// swap color, update x

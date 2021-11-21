@@ -18,6 +18,11 @@ public:
 	// runs that make up object, starting with a background run
 	// the initial size_t is the y coordinate
 	std::map<size_t, std::vector<std::pair<size_t, size_t> > > runs;
+
+	// if addRun is true, run is added if it intersects
+	bool DoesRunIntersect(size_t y, size_t x, size_t len, bool addRun = false);
+	// returns false if objects cannot be merged
+	bool MergeObject(msaObject &otherObj);
 };
 
 class msaAnalysis
