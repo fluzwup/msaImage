@@ -186,7 +186,7 @@ void msaAnalysis::GenerateProjection(msaImage &input, bool vertical,
 	if(vertical)
 	{
 		projection.resize(width);
-		for(int y = height - 1; y >= 0; --y)
+		for(size_t y = height - 1; y >= 0; --y)
 		{
 			unsigned char *byte = input.GetRawLine(y);
 			for(int x = bytesWide - 1; x >= 0; --x)
@@ -199,7 +199,7 @@ void msaAnalysis::GenerateProjection(msaImage &input, bool vertical,
 	else
 	{
 		projection.resize(height);
-		for(int y = height - 1; y >= 0; --y)
+		for(size_t y = height - 1; y >= 0; --y)
 		{
 			unsigned char *byte = input.GetRawLine(y);
 			for(int x = bytesWide - 1; x >= 0; --x)
@@ -226,11 +226,11 @@ void msaAnalysis::RunlengthEncodeImage(msaImage &img, std::vector< std::list<siz
 	// each element of the inner list describes a transition, light to dark or back
 	// each scanline starts with dark (and may be zero)
 	runs.resize(img.Height());
-	for(int y = 0; y < img.Height(); ++y)
+	for(size_t y = 0; y < img.Height(); ++y)
 	{
 		unsigned char *scanline = img.GetRawLine(y);
-		int last = 0;
-		int x = 0;
+		size_t last = 0;
+		size_t x = 0;
 		// set up first run (may end up being zero length)
 		while(x < img.Width())
 		{
@@ -262,7 +262,7 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 	if(!findLight)
 	{
 		// invert each run set by adding or removing zero length run to the front
-		for(int y = 0; y < img.Height(); ++y)
+		for(size_t y = 0; y < img.Height(); ++y)
 		{
 			if(runs[y].front() == 0) 
 				runs[y].pop_front();
