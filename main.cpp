@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	unsigned char *data = NULL;
 	double angle = std::stof(std::string(argv[1]));
 
-	if(!LoadPNG("text.png", width, height, bpl, depth, dpi, &data))
+	if(!LoadPNG("big_objects.png", width, height, bpl, depth, dpi, &data))
 		return -1;
 
 	msaImage input;

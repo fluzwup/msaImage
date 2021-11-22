@@ -182,40 +182,40 @@ void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, size_
 {
 	size_t newW;
 	size_t newH;
+	size_t newBPL;
 
 	// calculate new size to hold entire image
 	trans.GetNewSize(width, height, newW, newH);
+	newBPL = newW * depth / 8;
 
-	// these will be filled out by transform functions
-	unsigned char *output;
-	size_t newBPL;
+	unsigned char *output = NULL;
 
 	// transform data into output using the appropriate depth and speed
 	switch(depth)
 	{
 		case 8:
 			if(quality < 34)
-				output = transformFast8(trans, newW, newH, newBPL, data);
+				output = transformFast8(trans, newW, newH, newBPL);
 			else if(quality < 67)
-				output = transformBetter8(trans, newW, newH, newBPL, data);
+				output = transformBetter8(trans, newW, newH, newBPL);
 			else
-				output = transformBest8(trans, newW, newH, newBPL, data);
+				output = transformBest8(trans, newW, newH, newBPL);
 			break;
 		case 24:
 			if(quality < 34)
-				output = transformFast24(trans, newW, newH, newBPL, data);
+				output = transformFast24(trans, newW, newH, newBPL);
 			else if(quality < 67)
-				output = transformBetter24(trans, newW, newH, newBPL, data);
+				output = transformBetter24(trans, newW, newH, newBPL);
 			else
-				output = transformBest24(trans, newW, newH, newBPL, data);
+				output = transformBest24(trans, newW, newH, newBPL);
 			break;
 		case 32:
 			if(quality < 34)
-				output = transformFast32(trans, newW, newH, newBPL, data);
+				output = transformFast32(trans, newW, newH, newBPL);
 			else if(quality < 67)
-				output = transformBetter32(trans, newW, newH, newBPL, data);
+				output = transformBetter32(trans, newW, newH, newBPL);
 			else
-				output = transformBest32(trans, newW, newH, newBPL, data);
+				output = transformBest32(trans, newW, newH, newBPL);
 			break;
 		default:
 			throw "Invalid bit depth";
@@ -227,12 +227,8 @@ void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, size_
 
 
 // use nearest source pixel, no interpolation
-unsigned char *msaImage::transformFast32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformFast32(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = newW * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -256,27 +252,19 @@ unsigned char *msaImage::transformFast32(msaAffineTransform &transform, size_t &
 			else
 			{
 				size_t index = (size_t)ny * bytesPerLine + (size_t)nx * 4;
-				output[y * newBPL + x * 4] = input[index++];
-				output[y * newBPL + x * 4 + 1] = input[index++];
-				output[y * newBPL + x * 4 + 2] = input[index++];
-				output[y * newBPL + x * 4 + 3] = input[index];
+				output[y * newBPL + x * 4] = data[index++];
+				output[y * newBPL + x * 4 + 1] = data[index++];
+				output[y * newBPL + x * 4 + 2] = data[index++];
+				output[y * newBPL + x * 4 + 3] = data[index];
 			}
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
-unsigned char *msaImage::transformFast24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformFast24(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = (newW * 3 + 3) / 4 * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -299,26 +287,18 @@ unsigned char *msaImage::transformFast24(msaAffineTransform &transform, size_t &
 			else
 			{
 				size_t index = (size_t)ny * bytesPerLine + (size_t)nx * 3;
-				output[y * newBPL + x * 3] = input[index++];
-				output[y * newBPL + x * 3 + 1] = input[index++];
-				output[y * newBPL + x * 3 + 2] = input[index];
+				output[y * newBPL + x * 3] = data[index++];
+				output[y * newBPL + x * 3 + 1] = data[index++];
+				output[y * newBPL + x * 3 + 2] = data[index];
 			}
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
-unsigned char *msaImage::transformFast8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformFast8(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = (newW + 3) / 4 * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -339,15 +319,11 @@ unsigned char *msaImage::transformFast8(msaAffineTransform &transform, size_t &w
 			else
 			{
 				size_t index = (size_t)ny * bytesPerLine + (size_t)nx;
-				output[y * newBPL + x] = input[index++];
+				output[y * newBPL + x] = data[index++];
 			}
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
@@ -402,12 +378,8 @@ const int fastCosInv[] =
 };
 
 // cosine curve for interpolation between two points on each axis
-unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = newW * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -457,7 +429,7 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[wholeY * bytesPerLine + wholeX * 4];
+			unsigned char *ptr = &data[wholeY * bytesPerLine + wholeX * 4];
 			int r1 = ptr[0];	// grab two pixels of data
 			int g1 = ptr[1];
 			int b1 = ptr[2];
@@ -467,7 +439,7 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t
 			int b2 = ptr[6];
 			int a2 = ptr[7];
 
-			ptr += bpl;			// move down a line
+			ptr += bytesPerLine;			// move down a line
 			int r3 = ptr[0];	// grab two pixels of data
 			int g3 = ptr[1];
 			int b3 = ptr[2];
@@ -503,19 +475,11 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
-unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = (newW * 3 + 3) / 4 * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -564,7 +528,7 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[wholeY * bytesPerLine + wholeX * 3];
+			unsigned char *ptr = &data[wholeY * bytesPerLine + wholeX * 3];
 			int r1 = ptr[0];	// grab two pixels of data
 			int r2 = ptr[3];
 			int g1 = ptr[1];
@@ -572,7 +536,7 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t
 			int b1 = ptr[2];
 			int b2 = ptr[5];
 
-			ptr += bpl;			// move down a line
+			ptr += bytesPerLine;			// move down a line
 			int r3 = ptr[0];	// grab two pixels of data
 			int r4 = ptr[3];
 			int g3 = ptr[1];
@@ -602,19 +566,11 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
-unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = (newW + 3) / 4 * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -661,11 +617,11 @@ unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, size_t 
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[wholeY * bytesPerLine + wholeX];
+			unsigned char *ptr = &data[wholeY * bytesPerLine + wholeX];
 			int r1 = ptr[0];	// grab two pixels of data
 			int r2 = ptr[1];
 
-			ptr += bpl;			// move down a line
+			ptr += bytesPerLine;			// move down a line
 			int r3 = ptr[0];	// grab two pixels of data
 			int r4 = ptr[1];
 
@@ -683,10 +639,6 @@ unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, size_t 
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
@@ -769,12 +721,8 @@ int bcint4[] =
 };
 
 // bicubic interpolation between four points along each axis
-unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = newW * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -823,7 +771,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 4];
+			unsigned char *ptr = &data[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 4];
 			int r11 = *ptr++; 	// grab 4 pixels of data
 			int g11 = *ptr++; 
 			int b11 = *ptr++; 
@@ -963,20 +911,12 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
 // bicubic interpolation between four points along each axis
-unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = (newW * 3 + 3) / 4 * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -1024,7 +964,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 3];
+			unsigned char *ptr = &data[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 3];
 			int r11 = ptr[0];	// grab 4 pixels of data
 			int r12 = ptr[3];
 			int r13 = ptr[6];
@@ -1126,20 +1066,12 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 
 // bicubic interpolation between four points along each axis
-unsigned char *msaImage::transformBest8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input)
+unsigned char *msaImage::transformBest8(msaAffineTransform &transform, size_t &newW, size_t &newH, size_t &newBPL)
 {
-	size_t newH = height;
-	size_t newW = width;
-	size_t newBPL = (newW + 3) / 4 * 4;
-
 	// allocate space for output data
 	unsigned char *output = new unsigned char[newH * newBPL];
 
@@ -1185,7 +1117,7 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, size_t &w
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[(wholeY - 1) * bytesPerLine + (wholeX - 1)];
+			unsigned char *ptr = &data[(wholeY - 1) * bytesPerLine + (wholeX - 1)];
 			int r11 = ptr[0];	// grab 4 pixels of data
 			int r12 = ptr[1];
 			int r13 = ptr[2];
@@ -1233,10 +1165,6 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, size_t &w
 		}
 	}
 
-	// return new values
-	width = newW;
-	height = newH;
-	bpl = newBPL;
 	return output;
 }
 

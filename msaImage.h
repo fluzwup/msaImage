@@ -182,17 +182,17 @@ public:
 	void CreateImageFromRuns(std::vector< std::list <size_t> > &runs, size_t depth, msaPixel bg, msaPixel fg);
 protected:
 	// apply a transform to the given data type
-	unsigned char *transformFast32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
-	unsigned char *transformBetter32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
-	unsigned char *transformBest32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformFast32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	unsigned char *transformBetter32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	unsigned char *transformBest32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
 
-	unsigned char *transformFast24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
-	unsigned char *transformBetter24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
-	unsigned char *transformBest24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformFast24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	unsigned char *transformBetter24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	unsigned char *transformBest24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
 	
-	unsigned char *transformFast8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
-	unsigned char *transformBetter8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
-	unsigned char *transformBest8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl, unsigned char *input);
+	unsigned char *transformFast8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	unsigned char *transformBetter8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	unsigned char *transformBest8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
 };
 #endif
 
