@@ -111,10 +111,15 @@ bool msaObject::DoesRunIntersect(size_t run_y, size_t run_x, size_t run_len, boo
 				height = (y + height) - run_y;
 				y = run_y;
 			}
-			else if(run_y > y + height)
-			{
+			if(run_y > y + height)
 				height = run_y - y;
+			if(run_x < x)
+			{
+				width = (x + width) - run_x;
+				x = run_x;
 			}
+			if(run_x + run_len > x + width) 
+				width = run_x + run_len - x;
 		}
 	}
 	

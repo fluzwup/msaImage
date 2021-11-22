@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	black.b = 0;
 	black.a = 255;
 
-	msaPixel primaries[3];
+	msaPixel primaries[6];
 	primaries[0].r = 255;
 	primaries[0].g = 0;
 	primaries[0].b = 0;
@@ -101,6 +101,21 @@ int main(int argc, char **argv)
 	primaries[2].g = 0;
 	primaries[2].b = 255;
 	primaries[2].a = 255;
+
+	primaries[3].r = 127;
+	primaries[3].g = 127;
+	primaries[3].b = 0;
+	primaries[3].a = 255;
+
+	primaries[4].r = 0;
+	primaries[4].g = 127;
+	primaries[4].b = 127;
+	primaries[4].a = 255;
+
+	primaries[5].r = 127;
+	primaries[5].g = 0;
+	primaries[5].b = 127;
+	primaries[5].a = 255;
 
 	msaImage gray;
 	rotated.SimpleConvert(8, white, gray);
@@ -124,7 +139,7 @@ int main(int argc, char **argv)
 	for(msaObject &o : objects)
 	{
 		if(o.width > 15 && o.height > 15)
-			o.AddObjectToImage(imgObject, primaries[o.index % 3]);
+			o.AddObjectToImage(imgObject, primaries[o.index % 6]);
 	}
 	SavePNG("found_big_objects.png", imgObject);
 
@@ -133,7 +148,7 @@ int main(int argc, char **argv)
 	for(msaObject &o : objects)
 	{
 		if(o.width <= 15 || o.height <= 15)
-			o.AddObjectToImage(imgObject, primaries[o.index % 3]);
+			o.AddObjectToImage(imgObject, primaries[o.index % 6]);
 	}
 	SavePNG("found_small_objects.png", imgObject);
 	delete[] data;
