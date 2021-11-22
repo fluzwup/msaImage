@@ -33,7 +33,7 @@ bool msaObject::AddObjectToImage(msaImage &img, const msaPixel &foreground)
 	if(img.Height() < y + height) return false;
 
 	// for each scanline in map of runs, set all pixels in run to foreground color
-	for(size_t line_y = y; line_y < y + height; ++line_y)
+	for(size_t line_y = y; line_y <= y + height; ++line_y)
 	{
 		for(std::pair<size_t, size_t> &p : runs[line_y])
 		{
@@ -137,7 +137,7 @@ bool msaObject::MergeObject(msaObject &otherObj)
 	height = new_bottom - new_top;
 
 	// copy over runs
-	for(size_t line = y; line < y + height; ++line)
+	for(size_t line = y; line <= y + height; ++line)
 		for(std::pair<size_t, size_t> &p : otherObj.runs[line])
 			runs[line].push_back(p);
 
@@ -307,6 +307,8 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 				}
 				else
 				{
+					// if we've already added this run to an object, then the objects are connected
+					// so merge this object into the previous hit
 					if(obj.DoesRunIntersect(y, x, len, false))
 					{
 						++hits;

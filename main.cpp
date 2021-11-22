@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	unsigned char *data = NULL;
 	double angle = std::stof(std::string(argv[1]));
 
-	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
+	if(!LoadPNG("text.png", width, height, bpl, depth, dpi, &data))
 		return -1;
 
 	msaImage input;
@@ -74,6 +74,68 @@ int main(int argc, char **argv)
 	input.TransformImage(t, rotated, 10);
 	SavePNG("rotated.png", rotated);
 
+	msaPixel white;
+	white.r = 255;
+	white.g = 255;
+	white.b = 255;
+	white.a = 255;
+	
+	msaPixel black;
+	black.r = 0;
+	black.g = 0;
+	black.b = 0;
+	black.a = 255;
+
+	msaPixel primaries[3];
+	primaries[0].r = 255;
+	primaries[0].g = 0;
+	primaries[0].b = 0;
+	primaries[0].a = 255;
+
+	primaries[1].r = 0;
+	primaries[1].g = 255;
+	primaries[1].b = 0;
+	primaries[1].a = 255;
+
+	primaries[2].r = 0;
+	primaries[2].g = 0;
+	primaries[2].b = 255;
+	primaries[2].a = 255;
+
+	msaImage gray;
+	rotated.SimpleConvert(8, white, gray);
+
+	std::vector<std::list<size_t>  > runs;
+	msaAnalysis analyze;
+	analyze.RunlengthEncodeImage(gray, runs, 254, false);
+
+	gray.CreateImageFromRuns(runs, 8, black, white);
+	SavePNG("rle_output.png", gray);
+
+	std::list<msaObject> objects;
+	analyze.GenerateObjectList(gray, 254, false, objects);
+
+	printf("Found %zu objects\n", objects.size());
+
+
+	msaImage imgObject;
+	imgObject.CreateImage(gray.Width(), gray.Height(), 32, white);
+
+	for(msaObject &o : objects)
+	{
+		if(o.width > 15 && o.height > 15)
+			o.AddObjectToImage(imgObject, primaries[o.index % 3]);
+	}
+	SavePNG("found_big_objects.png", imgObject);
+
+	imgObject.CreateImage(gray.Width(), gray.Height(), 32, white);
+
+	for(msaObject &o : objects)
+	{
+		if(o.width <= 15 || o.height <= 15)
+			o.AddObjectToImage(imgObject, primaries[o.index % 3]);
+	}
+	SavePNG("found_small_objects.png", imgObject);
 	delete[] data;
 	return 0;
 }
