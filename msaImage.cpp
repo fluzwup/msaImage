@@ -180,12 +180,17 @@ void msaImage::CreateImage(size_t w, size_t h, size_t d, const msaPixel &fill)
 
 void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, size_t quality)
 {
-	unsigned char *output;
 	size_t newW;
 	size_t newH;
+
+	// calculate new size to hold entire image
+	trans.GetNewSize(width, height, newW, newH);
+
+	// these will be filled out by transform functions
+	unsigned char *output;
 	size_t newBPL;
 
-	// create output data
+	// transform data into output using the appropriate depth and speed
 	switch(depth)
 	{
 		case 8:
@@ -215,7 +220,8 @@ void msaImage::TransformImage(msaAffineTransform &trans, msaImage &outimg, size_
 		default:
 			throw "Invalid bit depth";
 	}
-	// create output image
+
+	// create output image, taking ownership of data returned by transform
 	outimg.TakeExternalData(newW, newH, newBPL, depth, output);
 }
 
@@ -249,7 +255,7 @@ unsigned char *msaImage::transformFast32(msaAffineTransform &transform, size_t &
 			}
 			else
 			{
-				size_t index = (size_t)ny * bpl + (size_t)nx * 4;
+				size_t index = (size_t)ny * bytesPerLine + (size_t)nx * 4;
 				output[y * newBPL + x * 4] = input[index++];
 				output[y * newBPL + x * 4 + 1] = input[index++];
 				output[y * newBPL + x * 4 + 2] = input[index++];
@@ -292,7 +298,7 @@ unsigned char *msaImage::transformFast24(msaAffineTransform &transform, size_t &
 			}
 			else
 			{
-				size_t index = (size_t)ny * bpl + (size_t)nx * 3;
+				size_t index = (size_t)ny * bytesPerLine + (size_t)nx * 3;
 				output[y * newBPL + x * 3] = input[index++];
 				output[y * newBPL + x * 3 + 1] = input[index++];
 				output[y * newBPL + x * 3 + 2] = input[index];
@@ -332,7 +338,7 @@ unsigned char *msaImage::transformFast8(msaAffineTransform &transform, size_t &w
 			}
 			else
 			{
-				size_t index = (size_t)ny * bpl + (size_t)nx;
+				size_t index = (size_t)ny * bytesPerLine + (size_t)nx;
 				output[y * newBPL + x] = input[index++];
 			}
 		}
@@ -451,7 +457,7 @@ unsigned char *msaImage::transformBetter32(msaAffineTransform &transform, size_t
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[wholeY * bpl + wholeX * 4];
+			unsigned char *ptr = &input[wholeY * bytesPerLine + wholeX * 4];
 			int r1 = ptr[0];	// grab two pixels of data
 			int g1 = ptr[1];
 			int b1 = ptr[2];
@@ -558,7 +564,7 @@ unsigned char *msaImage::transformBetter24(msaAffineTransform &transform, size_t
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[wholeY * bpl + wholeX * 3];
+			unsigned char *ptr = &input[wholeY * bytesPerLine + wholeX * 3];
 			int r1 = ptr[0];	// grab two pixels of data
 			int r2 = ptr[3];
 			int g1 = ptr[1];
@@ -655,7 +661,7 @@ unsigned char *msaImage::transformBetter8(msaAffineTransform &transform, size_t 
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[wholeY * bpl + wholeX];
+			unsigned char *ptr = &input[wholeY * bytesPerLine + wholeX];
 			int r1 = ptr[0];	// grab two pixels of data
 			int r2 = ptr[1];
 
@@ -817,7 +823,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[(wholeY - 1) * bpl + (wholeX - 1) * 4];
+			unsigned char *ptr = &input[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 4];
 			int r11 = *ptr++; 	// grab 4 pixels of data
 			int g11 = *ptr++; 
 			int b11 = *ptr++; 
@@ -838,7 +844,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &
 			int b14 = *ptr++; 
 			int a14 = *ptr++; 
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r21 = *ptr++; 	// grab 4 pixels of data
 			int g21 = *ptr++;
 			int b21 = *ptr++;
@@ -859,7 +865,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &
 			int b24 = *ptr++;
 			int a24 = *ptr++;
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r31 = *ptr++; 	// grab 4 pixels of data
 			int g31 = *ptr++;
 			int b31 = *ptr++;
@@ -880,7 +886,7 @@ unsigned char *msaImage::transformBest32(msaAffineTransform &transform, size_t &
 			int b34 = *ptr++;
 			int a34 = *ptr++;
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r41 = *ptr++; 	// grab 4 pixels of data
 			int g41 = *ptr++;
 			int b41 = *ptr++;
@@ -1018,7 +1024,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[(wholeY - 1) * bpl + (wholeX - 1) * 3];
+			unsigned char *ptr = &input[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 3];
 			int r11 = ptr[0];	// grab 4 pixels of data
 			int r12 = ptr[3];
 			int r13 = ptr[6];
@@ -1032,7 +1038,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &
 			int b13 = ptr[8];
 			int b14 = ptr[11];
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r21 = ptr[0];	// grab 4 pixels of data
 			int r22 = ptr[3];
 			int r23 = ptr[6];
@@ -1046,7 +1052,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &
 			int b23 = ptr[8];
 			int b24 = ptr[11];
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r31 = ptr[0];	// grab 4 pixels of data
 			int r32 = ptr[3];
 			int r33 = ptr[6];
@@ -1060,7 +1066,7 @@ unsigned char *msaImage::transformBest24(msaAffineTransform &transform, size_t &
 			int b33 = ptr[8];
 			int b34 = ptr[11];
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r41 = ptr[0];	// grab 4 pixels of data
 			int r42 = ptr[3];
 			int r43 = ptr[6];
@@ -1179,25 +1185,25 @@ unsigned char *msaImage::transformBest8(msaAffineTransform &transform, size_t &w
 			int wholeY = (int)ny;
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
-			unsigned char *ptr = &input[(wholeY - 1) * bpl + (wholeX - 1)];
+			unsigned char *ptr = &input[(wholeY - 1) * bytesPerLine + (wholeX - 1)];
 			int r11 = ptr[0];	// grab 4 pixels of data
 			int r12 = ptr[1];
 			int r13 = ptr[2];
 			int r14 = ptr[3];
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r21 = ptr[0];	// grab 4 pixels of data
 			int r22 = ptr[1];
 			int r23 = ptr[2];
 			int r24 = ptr[3];
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r31 = ptr[0];	// grab 4 pixels of data
 			int r32 = ptr[1];
 			int r33 = ptr[2];
 			int r34 = ptr[3];
 
-			ptr += bpl;		// move down one line
+			ptr += bytesPerLine;		// move down one line
 			int r41 = ptr[0];	// grab 4 pixels of data
 			int r42 = ptr[1];
 			int r43 = ptr[2];

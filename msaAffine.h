@@ -72,47 +72,43 @@ public:
 		oob_a = 255;
 	};
 
-	inline void GetNewSize(int w, int h, double scaling, double rotation, int &wNew, int &hNew)
+	inline void GetNewSize(size_t w, size_t h, size_t &wNew, size_t &hNew)
 	{
-		// set up temporary transform
-		msaAffineTransform temp;
-		SetTransform(scaling, rotation, 0, 0);
-
 		// transform corners of image, and track bounding box
 		double minX, maxX, minY, maxY;
 		minX = maxX = minY = maxY = 0.0;
 		double x, y;
 		x = 0.0;
 		y = 0.0;
-		temp.Transform(x, y);
+		Transform(x, y);
 		if(x < minX) minX = x;
 		if(x > maxX) maxX = x;
 		if(y < minY) minY = y;
 		if(y > maxY) maxY = y;
 		x = 0.0;
 		y = h;
-		temp.Transform(x, y);
+		Transform(x, y);
 		if(x < minX) minX = x;
 		if(x > maxX) maxX = x;
 		if(y < minY) minY = y;
 		if(y > maxY) maxY = y;
 		x = w;
 		y = 0.0;
-		temp.Transform(x, y);
+		Transform(x, y);
 		if(x < minX) minX = x;
 		if(x > maxX) maxX = x;
 		if(y < minY) minY = y;
 		if(y > maxY) maxY = y;
 		x = w;
 		y = h;
-		temp.Transform(x, y);
+		Transform(x, y);
 		if(x < minX) minX = x;
 		if(x > maxX) maxX = x;
 		if(y < minY) minY = y;
 		if(y > maxY) maxY = y;
 
-		wNew = (int)(maxX - minX + .99999);
-		hNew = (int)(maxY - minY + .99999);
+		wNew = (size_t)(maxX - minX + .99999);
+		hNew = (size_t)(maxY - minY + .99999);
 	};
 
 	inline void SetTransform(double scaling, double rotation, size_t w, size_t h)
