@@ -62,18 +62,6 @@ int main(int argc, char **argv)
 	unsigned char *data = NULL;
 	double angle = std::stof(std::string(argv[1]));
 
-	if(!LoadPNG("big_objects.png", width, height, bpl, depth, dpi, &data))
-		return -1;
-
-	msaImage input;
-	input.UseExternalData(width, height, bpl, depth, data);
-
-	msaAffineTransform t;
-	t.SetTransform(1.0, DegreesToRadians(angle), input.Width(), input.Height());
-	msaImage rotated;
-	input.TransformImage(t, rotated, 10);
-	SavePNG("rotated.png", rotated);
-
 	msaPixel white;
 	white.r = 255;
 	white.g = 255;
@@ -117,6 +105,18 @@ int main(int argc, char **argv)
 	primaries[5].b = 127;
 	primaries[5].a = 255;
 
+
+	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
+		return -1;
+
+	msaImage input;
+	input.UseExternalData(width, height, bpl, depth, data);
+	SavePNG("input.png", input);
+
+	msaImage rotated;
+	input.Rotate(DegreesToRadians(angle), 90, rotated);
+	SavePNG("rotated.png", rotated);
+/*
 	msaImage gray;
 	rotated.SimpleConvert(8, white, gray);
 
@@ -151,6 +151,7 @@ int main(int argc, char **argv)
 			o.AddObjectToImage(imgObject, primaries[o.index % 6]);
 	}
 	SavePNG("found_small_objects.png", imgObject);
+	*/
 	delete[] data;
 	return 0;
 }

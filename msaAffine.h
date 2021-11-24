@@ -42,21 +42,6 @@ protected:
 	double e_;
 	double f_;
 
-	// fixed point values, 65536 multiplier
-	long fa;	// horz mag
-	long fb;	// horz shear
-	long fc;	// vert shear
-	long fd;	// vert mag
-	long fe;	// horz trans
-	long ff;	// vert trans
-
-	// inverse values
-	long fa_;
-	long fb_;
-	long fc_;
-	long fd_;
-	long fe_;
-	long ff_;
 public:
 	// out of bounds color value
 	unsigned char oob_r;
@@ -64,70 +49,67 @@ public:
 	unsigned char oob_b;
 	unsigned char oob_a;
 
+	inline void SetToIdentity()
+	{
+		// maginification of 1.0, no shear, no translation
+		a = 1.0;
+		b = 0.0;
+		c = 0.0;
+		d = 1.0;
+		e = 0.0;
+		f = 0.0;
+		UpdateInverse();
+	};
+
 	msaAffineTransform()
 	{
 		oob_r = 127;
 		oob_g = 127;
 		oob_b = 127;
 		oob_a = 255;
+
+		SetToIdentity();
 	};
 
-	inline void GetNewSize(size_t w, size_t h, size_t &wNew, size_t &hNew)
-	{
-		// transform corners of image, and track bounding box
-		double minX, maxX, minY, maxY;
-		minX = maxX = minY = maxY = 0.0;
-		double x, y;
-		x = 0.0;
-		y = 0.0;
-		Transform(x, y);
-		if(x < minX) minX = x;
-		if(x > maxX) maxX = x;
-		if(y < minY) minY = y;
-		if(y > maxY) maxY = y;
-		x = 0.0;
-		y = h;
-		Transform(x, y);
-		if(x < minX) minX = x;
-		if(x > maxX) maxX = x;
-		if(y < minY) minY = y;
-		if(y > maxY) maxY = y;
-		x = w;
-		y = 0.0;
-		Transform(x, y);
-		if(x < minX) minX = x;
-		if(x > maxX) maxX = x;
-		if(y < minY) minY = y;
-		if(y > maxY) maxY = y;
-		x = w;
-		y = h;
-		Transform(x, y);
-		if(x < minX) minX = x;
-		if(x > maxX) maxX = x;
-		if(y < minY) minY = y;
-		if(y > maxY) maxY = y;
+	void Add(const msaAffineTransform &t);
 
-		wNew = (size_t)(maxX - minX + .99999);
-		hNew = (size_t)(maxY - minY + .99999);
+	void GetNewSize(size_t w, size_t h, size_t &wNew, size_t &hNew);
+
+	inline void SetTransform(double Hscale, double Vscale, double Hshear, double Vshear,
+					double Htranslate, double Vtranslate)
+	{
+		a = Hscale;
+		d = Vscale;
+		b = Hshear;
+		c = Vshear;
+		e = Htranslate;
+		f = Vtranslate;
+		UpdateInverse();
 	};
 
-	inline void SetTransform(double scaling, double rotation, size_t w, size_t h)
+	inline void Translate(double horizontal, double vertical)
 	{
-		// cache these so we only calculate them once
-		double cosrot = cos(rotation);
-		double sinrot = sin(rotation);
+		e += horizontal;
+		f += vertical;
+		UpdateInverse();
+	};
 
-		// if values are near zero, set to zero
-		if(abs(cosrot) < 1.0e-15) cosrot = 0;
-		if(abs(sinrot) < 1.0e-15) sinrot = 0;
+	inline void Scale(double scale)
+	{
+		// magnification values center on 1.0, not zero
+		a = (a - 1.0) * scale + 1.0;
+		d = (d - 1.0) * scale + 1.0;
+		b *= scale;
+		c *= scale;
+		e *= scale;
+		f *= scale;
+		UpdateInverse();
+	};
 
-		a = scaling * cosrot;
-		b = scaling * -sinrot;
-		c = scaling * sinrot;
-		d = scaling * cosrot;
-		e = (double)w / 2.0 * ((double)1.0 - cosrot) + (double)h / (double)2.0 * sinrot;
-		f = (double)h / 2.0 * ((double)1.0 - cosrot) - (double)w / (double)2.0 * sinrot;
+	void Rotate(double rotation, double center_x, double center_y);
 
+	inline void UpdateInverse()
+	{
 		// calculate inverse
 		double temp = a * d - b * c;
 

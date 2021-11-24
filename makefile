@@ -2,7 +2,8 @@
 BINARY = imgtest
 
 CXXSOURCES = main.cpp msaImage.cpp ColorspaceConversion.cpp msaFilters.cpp pngIO.cpp bmpIO.cpp\
-	     msaAnalysis.cpp
+	     msaAnalysis.cpp msaAffine.cpp 
+CSOURCES = 
 
 OBJECTS = ${CXXSOURCES:.cpp=.o} ${CSOURCES:.c=.o} 
 
@@ -10,7 +11,7 @@ INCLUDES = -I .
 
 LOCATIONS = 
 
-LIBRARIES = -lpng
+LIBRARIES = -lpng 
 
 CXXFLAGS = -ggdb -Wall
 CFLAGS = -ggdb -Wall
@@ -35,8 +36,8 @@ ${BINARY}:      ${OBJECTS}
 		@echo Building ${BINARY} Executable
 		${CXX} -o $@ \
 		${OBJECTS}  \
-		${LIBRARIES} \
-		${LOCATIONS}
+		${LOCATIONS} \
+		${LIBRARIES} 
                          
 clean:
 		rm -f ${BINARY} *.o 

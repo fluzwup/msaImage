@@ -49,10 +49,13 @@ public:
 	unsigned char *Data();
 
 	// access to raw data
-	inline unsigned char *GetRawLine(size_t y) { return &data[bytesPerLine * y]; };
+	inline unsigned char *GetRawLine(size_t y) 
+	{ 
+		return &data[bytesPerLine * y]; 
+	};
 	inline unsigned char *GetRawPixel(size_t x, size_t y) 
 	{ 
-			return &data[bytesPerLine * y + x * depth / 8]; 
+		return &data[bytesPerLine * y + x * depth / 8]; 
 	};
 
 	// access msaPixel access
@@ -122,6 +125,9 @@ public:
 	// copy data in from an external buffer
 	void SetCopyData(size_t width, size_t height, size_t bytesPerLine, size_t depth, unsigned char *data);
 
+	void Rotate(double radians, size_t quality, msaImage &output);
+	void Rotate(double radians, size_t quality);
+
 	void TransformImage(msaAffineTransform &trans, msaImage &output, size_t quality);
 
 	// going from 8 bit to 24 or 32 bit, use color as white point, and scale accordingly
@@ -182,17 +188,17 @@ public:
 	void CreateImageFromRuns(std::vector< std::list <size_t> > &runs, size_t depth, msaPixel bg, msaPixel fg);
 protected:
 	// apply a transform to the given data type
-	unsigned char *transformFast32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
-	unsigned char *transformBetter32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
-	unsigned char *transformBest32(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	void transformFast32(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
+	void transformBetter32(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
+	void transformBest32(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
 
-	unsigned char *transformFast24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
-	unsigned char *transformBetter24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
-	unsigned char *transformBest24(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	void transformFast24(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
+	void transformBetter24(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
+	void transformBest24(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
 	
-	unsigned char *transformFast8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
-	unsigned char *transformBetter8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
-	unsigned char *transformBest8(msaAffineTransform &transform, size_t &width, size_t &height, size_t &bpl);
+	void transformFast8(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
+	void transformBetter8(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
+	void transformBest8(msaAffineTransform &transform, size_t width, size_t height, size_t bpl, unsigned char *output);
 };
 #endif
 
