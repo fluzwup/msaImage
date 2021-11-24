@@ -598,6 +598,7 @@ void msaImage::transformBest32(msaAffineTransform &transform, size_t newW, size_
 		{
 			ny = y;
 			nx = x;
+
 			transform.InvTransform(nx, ny);
 
 			if(!(nx < 1 || ny < 1 || (size_t)nx >= width - 2 || (size_t)ny >= height - 2))
@@ -628,88 +629,76 @@ void msaImage::transformBest32(msaAffineTransform &transform, size_t newW, size_
 			int fracY = (int)(256.0 * ny) - 256 * wholeY;
 
 			unsigned char *ptr = &data[(wholeY - 1) * bytesPerLine + (wholeX - 1) * 4];
-			int r11 = *ptr++; 	// grab 4 pixels of data
-			int g11 = *ptr++; 
-			int b11 = *ptr++; 
-			int a11 = *ptr++;
-
-			int r12 = *ptr++; 
-			int g12 = *ptr++; 
-			int b12 = *ptr++; 
-			int a12 = *ptr++;
-
-			int r13 = *ptr++; 
-			int g13 = *ptr++; 
-			int b13 = *ptr++; 
-			int a13 = *ptr++;
-
-			int r14 = *ptr++; 
-			int g14 = *ptr++; 
-			int b14 = *ptr++; 
-			int a14 = *ptr++; 
+			int r11 = ptr[0];	// grab 4 pixels of data
+			int r12 = ptr[4];
+			int r13 = ptr[8];
+			int r14 = ptr[12];
+			int g11 = ptr[1];
+			int g12 = ptr[5];
+			int g13 = ptr[9];
+			int g14 = ptr[13];
+			int b11 = ptr[2];
+			int b12 = ptr[6];
+			int b13 = ptr[10];
+			int b14 = ptr[14];
+			int a11 = ptr[3];
+			int a12 = ptr[7];
+			int a13 = ptr[11];
+			int a14 = ptr[15];
 
 			ptr += bytesPerLine;		// move down one line
-			int r21 = *ptr++; 	// grab 4 pixels of data
-			int g21 = *ptr++;
-			int b21 = *ptr++;
-			int a21 = *ptr++;
-
-			int r22 = *ptr++;
-			int g22 = *ptr++;
-			int b22 = *ptr++;
-			int a22 = *ptr++;
-
-			int r23 = *ptr++;
-			int g23 = *ptr++;
-			int b23 = *ptr++;
-			int a23 = *ptr++;
-
-			int r24 = *ptr++;
-			int g24 = *ptr++;
-			int b24 = *ptr++;
-			int a24 = *ptr++;
+			int r21 = ptr[0];	// grab 4 pixels of data
+			int r22 = ptr[4];
+			int r23 = ptr[8];
+			int r24 = ptr[12];
+			int g21 = ptr[1];
+			int g22 = ptr[5];
+			int g23 = ptr[9];
+			int g24 = ptr[13];
+			int b21 = ptr[2];
+			int b22 = ptr[6];
+			int b23 = ptr[10];
+			int b24 = ptr[14];
+			int a21 = ptr[3];
+			int a22 = ptr[7];
+			int a23 = ptr[11];
+			int a24 = ptr[15];
 
 			ptr += bytesPerLine;		// move down one line
-			int r31 = *ptr++; 	// grab 4 pixels of data
-			int g31 = *ptr++;
-			int b31 = *ptr++;
-			int a31 = *ptr++;
-
-			int r32 = *ptr++;
-			int g32 = *ptr++;
-			int b32 = *ptr++;
-			int a32 = *ptr++;
-
-			int r33 = *ptr++;
-			int g33 = *ptr++;
-			int b33 = *ptr++;
-			int a33 = *ptr++;
-
-			int r34 = *ptr++;
-			int g34 = *ptr++;
-			int b34 = *ptr++;
-			int a34 = *ptr++;
+			int r31 = ptr[0];	// grab 4 pixels of data
+			int r32 = ptr[4];
+			int r33 = ptr[8];
+			int r34 = ptr[12];
+			int g31 = ptr[1];
+			int g32 = ptr[5];
+			int g33 = ptr[9];
+			int g34 = ptr[13];
+			int b31 = ptr[2];
+			int b32 = ptr[6];
+			int b33 = ptr[10];
+			int b34 = ptr[14];
+			int a31 = ptr[3];
+			int a32 = ptr[7];
+			int a33 = ptr[11];
+			int a34 = ptr[15];
 
 			ptr += bytesPerLine;		// move down one line
-			int r41 = *ptr++; 	// grab 4 pixels of data
-			int g41 = *ptr++;
-			int b41 = *ptr++;
-			int a41 = *ptr++;
-
-			int r42 = *ptr++;
-			int g42 = *ptr++;
-			int b42 = *ptr++;
-			int a42 = *ptr++;
-
-			int r43 = *ptr++;
-			int g43 = *ptr++;
-			int b43 = *ptr++;
-			int a43 = *ptr++;
-
-			int r44 = *ptr++;
-			int g44 = *ptr++;
-			int b44 = *ptr++;
-			int a44 = *ptr++;
+			int r41 = ptr[0];	// grab 4 pixels of data
+			int r42 = ptr[4];
+			int r43 = ptr[8];
+			int r44 = ptr[12];
+			int g41 = ptr[1];
+			int g42 = ptr[5];
+			int g43 = ptr[9];
+			int g44 = ptr[13];
+			int b41 = ptr[2];
+			int b42 = ptr[6];
+			int b43 = ptr[10];
+			int b44 = ptr[14];
+			int a41 = ptr[3];
+			int a42 = ptr[7];
+			int a43 = ptr[11];
+			int a44 = ptr[15];
 
 			// do horizontal interpolation
 			r11 = (r11 * bcint1[fracX] + r12 * bcint2[fracX] + r13 * bcint3[fracX] + r14 * bcint4[fracX]) >> 16;
@@ -737,7 +726,7 @@ void msaImage::transformBest32(msaAffineTransform &transform, size_t newW, size_
 			g11 = (g11 * bcint1[fracY] + g21 * bcint2[fracY] + g31 * bcint3[fracY] + g41 * bcint4[fracY]) >> 16;
 			b11 = (b11 * bcint1[fracY] + b21 * bcint2[fracY] + b31 * bcint3[fracY] + b41 * bcint4[fracY]) >> 16;
 			a11 = (a11 * bcint1[fracY] + a21 * bcint2[fracY] + a31 * bcint3[fracY] + a41 * bcint4[fracY]) >> 16;
-
+			
 			// clip values (bicubic interpolation can overflow and underflow)
 			if(r11 < 0) r11 = 0;
 			if(g11 < 0) g11 = 0;
@@ -748,7 +737,7 @@ void msaImage::transformBest32(msaAffineTransform &transform, size_t newW, size_
 			if(g11 > 255) g11 = 255;
 			if(b11 > 255) b11 = 255;
 			if(a11 > 255) a11 = 255;
-	
+
 			*(outbuffer++) = r11;
 			*(outbuffer++) = g11;
 			*(outbuffer++) = b11;
@@ -765,6 +754,7 @@ void msaImage::transformBest32(msaAffineTransform &transform, size_t newW, size_
 		}
 	}
 }
+
 
 // bicubic interpolation between four points along each axis
 void msaImage::transformBest24(msaAffineTransform &transform, size_t newW, size_t newH, size_t newBPL, unsigned char *output)
