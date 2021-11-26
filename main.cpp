@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 {
 	size_t width, height, bpl, depth, dpi;
 	unsigned char *data = NULL;
-	double angle = std::stof(std::string(argv[1]));
+	//double angle = std::stof(std::string(argv[1]));
 
 	msaPixel white;
 	white.r = 255;
@@ -74,84 +74,38 @@ int main(int argc, char **argv)
 	black.b = 0;
 	black.a = 255;
 
-	msaPixel primaries[6];
-	primaries[0].r = 255;
-	primaries[0].g = 0;
-	primaries[0].b = 0;
-	primaries[0].a = 255;
+	msaPixel spectrum[36];
+	for(int i = 0; i < 36; ++i)
+	{
+		unsigned char r, g, b, h, s, v;
+		h = i * 255 / 36;
+		s = 255;
+		v = 255;
+		HSVtoRGB(h, s, v, r, g, b);
+		spectrum[i].r = r;
+		spectrum[i].g = g;
+		spectrum[i].b = b;
+		spectrum[i].a = 255;
+	}
 
-	primaries[1].r = 0;
-	primaries[1].g = 255;
-	primaries[1].b = 0;
-	primaries[1].a = 255;
-
-	primaries[2].r = 0;
-	primaries[2].g = 0;
-	primaries[2].b = 255;
-	primaries[2].a = 255;
-
-	primaries[3].r = 127;
-	primaries[3].g = 127;
-	primaries[3].b = 0;
-	primaries[3].a = 255;
-
-	primaries[4].r = 0;
-	primaries[4].g = 127;
-	primaries[4].b = 127;
-	primaries[4].a = 255;
-
-	primaries[5].r = 127;
-	primaries[5].g = 0;
-	primaries[5].b = 127;
-	primaries[5].a = 255;
-
-
-	if(!LoadPNG("objects.png", width, height, bpl, depth, dpi, &data))
+	if(!LoadPNG("colorscan.png", width, height, bpl, depth, dpi, &data))
 		return -1;
 
 	msaImage input;
 	input.UseExternalData(width, height, bpl, depth, data);
-	SavePNG("input.png", input);
 
-	msaImage rotated;
-	input.Rotate(DegreesToRadians(angle), 90, rotated);
-	SavePNG("rotated.png", rotated);
-/*
-	msaImage gray;
-	rotated.SimpleConvert(8, white, gray);
+	msaFilters filter;
+	filter.SetType(msaFilters::FilterType::Gaussian, 21, 3);
+	msaImage smooth;
+	filter.FilterImage(input, smooth);
+	filter.SetType(msaFilters::FilterType::Gaussian, 3, 21);
+	filter.FilterImage(smooth, smooth);
+	SavePNG("smooth.png", smooth);
 
-	std::vector<std::list<size_t>  > runs;
-	msaAnalysis analyze;
-	analyze.RunlengthEncodeImage(gray, runs, 254, false);
+	msaImage highPass;
+	input.DiffImages(smooth, highPass);
+	SavePNG("highpass.png", highPass);
 
-	gray.CreateImageFromRuns(runs, 8, black, white);
-	SavePNG("rle_output.png", gray);
-
-	std::list<msaObject> objects;
-	analyze.GenerateObjectList(gray, 254, false, objects);
-
-	printf("Found %zu objects\n", objects.size());
-
-
-	msaImage imgObject;
-	imgObject.CreateImage(gray.Width(), gray.Height(), 32, white);
-
-	for(msaObject &o : objects)
-	{
-		if(o.width > 15 && o.height > 15)
-			o.AddObjectToImage(imgObject, primaries[o.index % 6]);
-	}
-	SavePNG("found_big_objects.png", imgObject);
-
-	imgObject.CreateImage(gray.Width(), gray.Height(), 32, white);
-
-	for(msaObject &o : objects)
-	{
-		if(o.width <= 15 || o.height <= 15)
-			o.AddObjectToImage(imgObject, primaries[o.index % 6]);
-	}
-	SavePNG("found_small_objects.png", imgObject);
-	*/
 	delete[] data;
 	return 0;
 }

@@ -2,26 +2,8 @@
 #define _msaImage_included
 #include <vector>
 #include <list>
+#include "msaPixel.h"
 #include "msaAffine.h"
-
-// alpha 0 is transparent, 255 is opaque
-// if pixel is interpreted as gray, r will be used for intensity
-class msaPixel
-{
-public:
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
-	unsigned char a;
-	inline bool operator==(const msaPixel &rhs)
-	{
-		if(r != rhs.r) return false;
-		if(g != rhs.g) return false;
-		if(b != rhs.b) return false;
-		if(a != rhs.a) return false;
-		return true;
-	};
-};
 
 // depths 8 for grayscale, 24 for RGB, 32 for RGBA
 class msaImage
@@ -33,6 +15,8 @@ protected:
 	unsigned char *data;
 	size_t depth;
 	bool ownsData;
+
+	msaPixel fill;
 
 	void MoveData(msaImage &other);
 
@@ -58,7 +42,7 @@ public:
 		return &data[bytesPerLine * y + x * depth / 8]; 
 	};
 
-	// access msaPixel access
+	// msaPixel access
 	inline msaPixel GetPixel(size_t x, size_t y)
 	{
 		msaPixel p;
@@ -113,6 +97,8 @@ public:
 		}
 	};
 	
+	void SetFill(const msaPixel &p);
+
 	// create a blank image
 	void CreateImage(size_t width, size_t height, size_t depth);
 	// create solid color image

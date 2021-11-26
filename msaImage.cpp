@@ -10,6 +10,11 @@ msaImage::msaImage()
 	bytesPerLine = 0;
 	data = NULL;
 	depth = 0;
+
+	fill.r = 255;
+	fill.g = 255;
+	fill.b = 255;
+	fill.a = 255;
 }
 
 msaImage::~msaImage()
@@ -117,6 +122,14 @@ void msaImage::SetCopyData(size_t w, size_t h, size_t bpl, size_t d, unsigned ch
 	}
 }
 
+void msaImage::SetFill(const msaPixel &p)
+{
+	fill.r = p.r;
+	fill.g = p.g;
+	fill.b = p.b;
+	fill.a = p.a;
+}
+
 void msaImage::CreateImage(size_t w, size_t h, size_t d)
 {
 	if(ownsData && data != NULL) delete[] data;
@@ -181,6 +194,8 @@ void msaImage::CreateImage(size_t w, size_t h, size_t d, const msaPixel &fill)
 void msaImage::Rotate(double radians, size_t quality, msaImage &output)
 {
 	msaAffineTransform t;
+
+	t.SetFill(fill);
 
 	// move center of image to origin, calculate rotation about that point
 	t.Translate(width / -2.0, height / -2.0);
@@ -1468,7 +1483,7 @@ void msaImage::MinImages(msaImage &input, msaImage &outputref)
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(size_t x = 0; x < width; ++x)
+		for(size_t x = 0; x < bytesPerLine; ++x)
 		{
 			unsigned char c1 = *in1++;
 			unsigned char c2 = *in2++;
@@ -1492,7 +1507,7 @@ void msaImage::MaxImages(msaImage &input, msaImage &outputref)
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(size_t x = 0; x < width; ++x)
+		for(size_t x = 0; x < bytesPerLine; ++x)
 		{
 			unsigned char c1 = *in1++;
 			unsigned char c2 = *in2++;
@@ -1516,7 +1531,7 @@ void msaImage::SumImages(msaImage &input, msaImage &outputref)
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(size_t x = 0; x < width; ++x)
+		for(size_t x = 0; x < bytesPerLine; ++x)
 		{
 			int sum = *in1++ + *in2++;
 			*out++ = (unsigned char)sum / 2;
@@ -1539,7 +1554,7 @@ void msaImage::DiffImages(msaImage &input, msaImage &outputref)
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(size_t x = 0; x < width; ++x)
+		for(size_t x = 0; x < bytesPerLine; ++x)
 		{
 			int diff = *in1++ - *in2++;
 			*out++ = (unsigned char)(127 + diff / 2);
@@ -1562,7 +1577,7 @@ void msaImage::MultiplyImages(msaImage &input, msaImage &outputref)
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(size_t x = 0; x < width; ++x)
+		for(size_t x = 0; x < bytesPerLine; ++x)
 		{
 			int m = *in1++ * *in2++;
 			*out++ = (unsigned char)(m / 256);
@@ -1585,7 +1600,7 @@ void msaImage::DivideImages(msaImage &input, msaImage &outputref)
 		unsigned char *in1 = &data[y * bytesPerLine];
 		unsigned char *in2 = &input.Data()[y * input.BytesPerLine()];
 		unsigned char *out = &output.Data()[y * output.BytesPerLine()];
-		for(size_t x = 0; x < width; ++x)
+		for(size_t x = 0; x < bytesPerLine; ++x)
 		{
 			// add one to divisor to avoid divide by zero
 			int d = *in1++ * 256 / (1 + *in2++);

@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <memory.h>
+#include "msaPixel.h"
 
 /*
 	Affine transforms have the form: 
@@ -19,9 +20,16 @@
 	f = translateY
 */
 
+const double pi = 3.14159265358979323846;
+
 inline double DegreesToRadians(double degrees)
 {
-	return degrees * (double)3.14159265358979323846 / (double)180.0;
+	return degrees * pi / 180.0;
+}
+
+inline double RadiansToDegrees(double radians)
+{
+	return radians * 180.0 / pi;
 }
 
 class msaAffineTransform
@@ -69,6 +77,14 @@ public:
 		oob_a = 255;
 
 		SetToIdentity();
+	};
+
+	void SetFill(const msaPixel &p)
+	{
+		oob_r = p.r;
+		oob_g = p.g;
+		oob_b = p.b;
+		oob_a = p.a;
 	};
 
 	void Add(const msaAffineTransform &t);

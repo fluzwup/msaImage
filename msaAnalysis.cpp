@@ -174,8 +174,6 @@ void msaAnalysis::FindEdges(msaImage &input, msaImage &edgemap)
 
 		return;
 	}
-
-	// 
 }
 
 void msaAnalysis::GenerateProjection(msaImage &input, bool vertical, 
@@ -293,7 +291,6 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 				continue;
 			}
 
-			printf("Run %li, %li to %li  ", y, x, x + len);
 			// count number of objects a run intersects
 			int hits = 0;
 			// pointer to the last object hit by a run
@@ -306,7 +303,6 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 					if(obj.DoesRunIntersect(y, x, len, true))
 					{
 						++hits;
-						printf("First hit, object %li new height %li\n", obj.index, obj.height);
 						lastObj = &obj;
 					}
 				}
@@ -317,8 +313,6 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 					if(obj.DoesRunIntersect(y, x, len, false))
 					{
 						++hits;
-						printf("Hit %i, object %li merging into %li\n", 
-										hits, obj.index, lastObj->index);
 						lastObj->MergeObject(obj);
 					}
 				}
@@ -334,9 +328,6 @@ void msaAnalysis::GenerateObjectList(msaImage &img, int threshold, bool findLigh
 				newObj.runs[y].push_back(std::pair<size_t, size_t>(x, len)); 	// initial run
 				newObj.index = newObjects.size();
 				newObjects.push_back(newObj);
-
-				printf("Created new object %li, location %li, %li size %li, %li\n",
-					newObj.index, newObj.x, newObj.y, newObj.width, newObj.height);
 			}
 
 			// swap color, update x
